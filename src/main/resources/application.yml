@@ -1,0 +1,9 @@
+spring:
+  application:
+    name: taskflow-api
+  datasource:
+    url: jdbc:postgresql://localhost:5432/taskflow
+    username: postgres
+    password: theNinjaDev_0
+  jpa:
+    show-sql: true
