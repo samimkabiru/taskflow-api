@@ -64,6 +64,7 @@ public class Task {
     private List<Attachment> attachments = new ArrayList<>();
 
     @OneToMany(mappedBy = "task")
+    @OrderBy("createdAt ASC")
     private List<Comment> comments = new ArrayList<>();
 
     @ManyToMany
