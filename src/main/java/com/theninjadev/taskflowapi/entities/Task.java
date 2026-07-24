@@ -63,6 +63,9 @@ public class Task {
     @OneToMany(mappedBy = "task")
     private List<Attachment> attachments = new ArrayList<>();
 
+    @OneToMany(mappedBy = "task")
+    private List<Comment> comments = new ArrayList<>();
+
     @ManyToMany
     @JoinTable(
             name = "task_labels",
