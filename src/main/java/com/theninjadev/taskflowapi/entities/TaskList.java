@@ -34,5 +34,6 @@ public class TaskList {
     private OffsetDateTime updatedAt;
 
     @OneToMany(mappedBy = "taskList")
+    @OrderBy("position ASC")
     private List<Task> tasks = new ArrayList<>();
 }

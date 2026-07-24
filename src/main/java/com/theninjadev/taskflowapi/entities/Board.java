@@ -49,5 +49,6 @@ public class Board {
     private Set<BoardMember> boardMembers = new LinkedHashSet<>();
 
     @OneToMany(mappedBy = "board")
+    @OrderBy("position ASC")
     private List<TaskList> taskLists = new ArrayList<>();
 }
