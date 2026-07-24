@@ -5,9 +5,7 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.time.OffsetDateTime;
-import java.util.LinkedHashSet;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 
 @Getter
 @Setter
@@ -49,4 +47,7 @@ public class Board {
 
     @OneToMany(mappedBy = "board")
     private Set<BoardMember> boardMembers = new LinkedHashSet<>();
+
+    @OneToMany(mappedBy = "board")
+    private List<TaskList> taskLists = new ArrayList<>();
 }

@@ -1,16 +1,11 @@
 package com.theninjadev.taskflowapi.entities;
 
 import jakarta.persistence.*;
-import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
-import org.hibernate.annotations.ColumnDefault;
-import org.hibernate.annotations.OnDelete;
-import org.hibernate.annotations.OnDeleteAction;
 
 import java.time.OffsetDateTime;
-import java.util.UUID;
+import java.util.*;
 
 @Getter
 @Setter
@@ -37,4 +32,7 @@ public class TaskList {
 
     @Column(name = "updated_at")
     private OffsetDateTime updatedAt;
+
+    @OneToMany(mappedBy = "taskList")
+    private List<Task> tasks = new ArrayList<>();
 }
