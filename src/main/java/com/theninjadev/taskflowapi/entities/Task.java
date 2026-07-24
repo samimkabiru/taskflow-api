@@ -7,9 +7,7 @@ import lombok.Setter;
 
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
-import java.util.HashSet;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 
 @Getter
 @Setter
@@ -61,6 +59,9 @@ public class Task {
     
     @Column(name = "updated_at")
     private OffsetDateTime updatedAt;
+
+    @OneToMany(mappedBy = "task")
+    private List<Attachment> attachments = new ArrayList<>();
 
     @ManyToMany
     @JoinTable(
