@@ -3,6 +3,7 @@ package com.theninjadev.taskflowapi.entities;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
+import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.OffsetDateTime;
 import java.util.UUID;
@@ -30,6 +31,7 @@ public class RefreshToken {
     @Column(name = "revoked")
     private Boolean revoked;
 
+    @CreationTimestamp
     @Column(name = "created_at")
     private OffsetDateTime createdAt;
 }
