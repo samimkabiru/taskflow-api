@@ -2,6 +2,7 @@ package com.theninjadev.taskflowapi.services;
 
 import com.theninjadev.taskflowapi.config.JwtConfig;
 import com.theninjadev.taskflowapi.entities.User;
+import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -35,6 +36,22 @@ public class JwtService {
                 .expiration(new Date(System.currentTimeMillis() + 1000 * tokenExpiration))
                 .signWith(jwtConfig.getSecretKey())
                 .compact();
+    }
+
+    private Claims getClaims(String token) {
+        return Jwts.parser()
+                .verifyWith(jwtConfig.getSecretKey())
+                .build()
+                .parseSignedClaims(token)
+                .getPayload();
+    }
+
+    public boolean isExpired(String token) {
+        try {
+            return getClaims(token).getExpiration().before(new Date());
+        } catch (Exception e){
+            return true;
+        }
     }
 
     public String hashToken(String token) {

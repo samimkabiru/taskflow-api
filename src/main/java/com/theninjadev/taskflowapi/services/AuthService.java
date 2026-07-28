@@ -6,11 +6,13 @@ import com.theninjadev.taskflowapi.dtos.auth.LoginRequest;
 import com.theninjadev.taskflowapi.dtos.auth.RegisterRequest;
 import com.theninjadev.taskflowapi.entities.RefreshToken;
 import com.theninjadev.taskflowapi.entities.User;
-import com.theninjadev.taskflowapi.exceptions.UserExistsException;
 import com.theninjadev.taskflowapi.exceptions.InvalidCredentialsException;
+import com.theninjadev.taskflowapi.exceptions.InvalidRefreshTokenException;
+import com.theninjadev.taskflowapi.exceptions.UserExistsException;
 import com.theninjadev.taskflowapi.mappers.UserMapper;
 import com.theninjadev.taskflowapi.repositories.RefreshTokenRepository;
 import com.theninjadev.taskflowapi.repositories.UserRepository;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.AllArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -55,6 +57,24 @@ public class AuthService {
             throw new InvalidCredentialsException();
 
         return issueTokensFor(user);
+    }
+
+    @Transactional
+    public AuthResult refreshUserTokens(String refreshToken) {
+        var existingToken = refreshTokenRepository
+                .findByTokenHash(jwtService.hashToken(refreshToken))
+                .orElseThrow(InvalidRefreshTokenException::new);
+
+        if (existingToken.getRevoked())
+            throw new InvalidRefreshTokenException();
+
+        if (jwtService.isExpired(refreshToken))
+            throw new InvalidRefreshTokenException();
+
+        existingToken.setRevoked(true);
+        refreshTokenRepository.save(existingToken);
+
+        return issueTokensFor(existingToken.getUser());
     }
 
     private AuthResult issueTokensFor(User user) {

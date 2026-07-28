@@ -5,6 +5,7 @@ import com.theninjadev.taskflowapi.dtos.auth.AuthResponse;
 import com.theninjadev.taskflowapi.dtos.auth.LoginRequest;
 import com.theninjadev.taskflowapi.dtos.auth.RegisterRequest;
 import com.theninjadev.taskflowapi.services.AuthService;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
@@ -12,10 +13,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/auth")
@@ -59,6 +57,21 @@ public class AuthController {
                         authResult.accessToken(),
                         authResult.user()));
 
+    }
+
+    @PostMapping("/refresh")
+    public ResponseEntity<AuthResponse> refreshTokens(
+            @CookieValue("refreshToken") String refreshToken,
+            HttpServletResponse response) {
+        var authResult = authService.refreshUserTokens(refreshToken);
+
+        var cookie = buildRefreshTokenCookie(authResult.refreshToken());
+        response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
+
+        return ResponseEntity
+                .ok(new AuthResponse(
+                        authResult.accessToken(),
+                        authResult.user()));
     }
 
     private ResponseCookie buildRefreshTokenCookie(String refreshToken) {
