@@ -12,7 +12,6 @@ import com.theninjadev.taskflowapi.exceptions.UserExistsException;
 import com.theninjadev.taskflowapi.mappers.UserMapper;
 import com.theninjadev.taskflowapi.repositories.RefreshTokenRepository;
 import com.theninjadev.taskflowapi.repositories.UserRepository;
-import jakarta.servlet.http.HttpServletRequest;
 import lombok.AllArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -68,13 +67,25 @@ public class AuthService {
         if (existingToken.getRevoked())
             throw new InvalidRefreshTokenException();
 
-        if (jwtService.isExpired(refreshToken))
+        if (existingToken.getExpiresAt().isBefore(OffsetDateTime.now()))
             throw new InvalidRefreshTokenException();
 
         existingToken.setRevoked(true);
         refreshTokenRepository.save(existingToken);
 
         return issueTokensFor(existingToken.getUser());
+    }
+
+    public void logoutUser(String refreshToken) {
+        var existingToken = refreshTokenRepository.findByTokenHash(jwtService.hashToken(refreshToken))
+                .orElseThrow(InvalidRefreshTokenException::new);
+
+        if (existingToken.getRevoked())
+            throw new InvalidRefreshTokenException();
+
+        existingToken.setRevoked(true);
+        refreshTokenRepository.save(existingToken);
+
     }
 
     private AuthResult issueTokensFor(User user) {

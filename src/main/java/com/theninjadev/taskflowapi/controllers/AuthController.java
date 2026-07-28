@@ -5,7 +5,6 @@ import com.theninjadev.taskflowapi.dtos.auth.AuthResponse;
 import com.theninjadev.taskflowapi.dtos.auth.LoginRequest;
 import com.theninjadev.taskflowapi.dtos.auth.RegisterRequest;
 import com.theninjadev.taskflowapi.services.AuthService;
-import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
@@ -59,6 +58,17 @@ public class AuthController {
 
     }
 
+    @PostMapping("/logout")
+    public ResponseEntity<Void> logout(
+            @CookieValue("refreshToken") String refreshToken,
+            HttpServletResponse response
+    ) {
+        authService.logoutUser(refreshToken);
+        response.addHeader(HttpHeaders.SET_COOKIE, clearRefreshTokenCookie().toString());
+
+        return ResponseEntity.noContent().build();
+    }
+
     @PostMapping("/refresh")
     public ResponseEntity<AuthResponse> refreshTokens(
             @CookieValue("refreshToken") String refreshToken,
@@ -81,6 +91,16 @@ public class AuthController {
                 .sameSite("Strict")
                 .path("/auth/refresh")
                 .maxAge(jwtConfig.getRefreshTokenExpiration())
+                .build();
+    }
+
+    private ResponseCookie clearRefreshTokenCookie() {
+        return ResponseCookie.from("refreshToken", "")
+                .httpOnly(true)
+                .secure(true)
+                .sameSite("Strict")
+                .path("/auth/refresh")
+                .maxAge(0)
                 .build();
     }
 }
