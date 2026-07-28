@@ -2,6 +2,7 @@ package com.theninjadev.taskflowapi.controllers;
 
 import com.theninjadev.taskflowapi.config.JwtConfig;
 import com.theninjadev.taskflowapi.dtos.auth.AuthResponse;
+import com.theninjadev.taskflowapi.dtos.auth.LoginRequest;
 import com.theninjadev.taskflowapi.dtos.auth.RegisterRequest;
 import com.theninjadev.taskflowapi.services.AuthService;
 import jakarta.servlet.http.HttpServletResponse;
@@ -30,13 +31,7 @@ public class AuthController {
     ) {
         var authResult = authService.registerUser(request);
 
-        var cookie = ResponseCookie.from("refreshToken", authResult.refreshToken())
-                .httpOnly(true)
-                .secure(true)
-                .sameSite("Strict")
-                .path("/auth/refresh")
-                .maxAge(jwtConfig.getRefreshTokenExpiration())
-                .build();
+        var cookie = buildRefreshTokenCookie(authResult.refreshToken());
 
         response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
 
@@ -45,5 +40,34 @@ public class AuthController {
                 .body(new AuthResponse(
                         authResult.accessToken(),
                         authResult.user()));
+    }
+
+    @PostMapping("/login")
+    public ResponseEntity<AuthResponse> login(
+            @Valid @RequestBody LoginRequest request,
+            HttpServletResponse response
+    ) {
+
+        var authResult = authService.loginUser(request);
+
+        var cookie = buildRefreshTokenCookie(authResult.refreshToken());
+
+        response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
+
+        return ResponseEntity
+                .ok(new AuthResponse(
+                        authResult.accessToken(),
+                        authResult.user()));
+
+    }
+
+    private ResponseCookie buildRefreshTokenCookie(String refreshToken) {
+        return ResponseCookie.from("refreshToken", refreshToken)
+                .httpOnly(true)
+                .secure(true)
+                .sameSite("Strict")
+                .path("/auth/refresh")
+                .maxAge(jwtConfig.getRefreshTokenExpiration())
+                .build();
     }
 }

@@ -1,5 +1,6 @@
 package com.theninjadev.taskflowapi.controllers;
 
+import com.theninjadev.taskflowapi.exceptions.InvalidCredentialsException;
 import com.theninjadev.taskflowapi.exceptions.UserExistsException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
@@ -30,5 +31,11 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ProblemDetail> handleUserExists(UserExistsException ex) {
         var problem = ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.getMessage());
         return ResponseEntity.status(HttpStatus.CONFLICT).body(problem);
+    }
+
+    @ExceptionHandler(InvalidCredentialsException.class)
+    public ResponseEntity<ProblemDetail> handleInvalidCredentials(InvalidCredentialsException ex) {
+        var problem = ProblemDetail.forStatusAndDetail(HttpStatus.UNAUTHORIZED, ex.getMessage());
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(problem);
     }
 }

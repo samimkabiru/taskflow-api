@@ -2,10 +2,12 @@ package com.theninjadev.taskflowapi.services;
 
 import com.theninjadev.taskflowapi.config.JwtConfig;
 import com.theninjadev.taskflowapi.dtos.auth.AuthResult;
+import com.theninjadev.taskflowapi.dtos.auth.LoginRequest;
 import com.theninjadev.taskflowapi.dtos.auth.RegisterRequest;
 import com.theninjadev.taskflowapi.entities.RefreshToken;
 import com.theninjadev.taskflowapi.entities.User;
 import com.theninjadev.taskflowapi.exceptions.UserExistsException;
+import com.theninjadev.taskflowapi.exceptions.InvalidCredentialsException;
 import com.theninjadev.taskflowapi.mappers.UserMapper;
 import com.theninjadev.taskflowapi.repositories.RefreshTokenRepository;
 import com.theninjadev.taskflowapi.repositories.UserRepository;
@@ -40,6 +42,22 @@ public class AuthService {
 
         userRepository.save(user);
 
+        return issueTokensFor(user);
+    }
+
+    @Transactional
+    public AuthResult loginUser(LoginRequest request) {
+        var email = request.getEmail().trim().toLowerCase();
+        var user = userRepository.findByEmail(email)
+                .orElseThrow(InvalidCredentialsException::new);
+
+        if (!passwordEncoder.matches(request.getPassword(), user.getPasswordHash()))
+            throw new InvalidCredentialsException();
+
+        return issueTokensFor(user);
+    }
+
+    private AuthResult issueTokensFor(User user) {
         var token = jwtService.generateAccessToken(user);
         var refreshToken = jwtService.generateRefreshToken(user);
 
