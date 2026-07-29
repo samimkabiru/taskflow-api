@@ -89,7 +89,7 @@ public class AuthController {
                 .httpOnly(true)
                 .secure(true)
                 .sameSite("Strict")
-                .path("/auth/refresh")
+                .path("/auth")
                 .maxAge(jwtConfig.getRefreshTokenExpiration())
                 .build();
     }
@@ -99,7 +99,7 @@ public class AuthController {
                 .httpOnly(true)
                 .secure(true)
                 .sameSite("Strict")
-                .path("/auth/refresh")
+                .path("/auth")
                 .maxAge(0)
                 .build();
     }
