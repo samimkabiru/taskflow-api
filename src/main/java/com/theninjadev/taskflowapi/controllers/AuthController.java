@@ -2,6 +2,7 @@ package com.theninjadev.taskflowapi.controllers;
 
 import com.theninjadev.taskflowapi.config.JwtConfig;
 import com.theninjadev.taskflowapi.dtos.auth.AuthResponse;
+import com.theninjadev.taskflowapi.dtos.auth.ChangePasswordRequest;
 import com.theninjadev.taskflowapi.dtos.auth.LoginRequest;
 import com.theninjadev.taskflowapi.dtos.auth.RegisterRequest;
 import com.theninjadev.taskflowapi.services.AuthService;
@@ -66,6 +67,16 @@ public class AuthController {
         authService.logoutUser(refreshToken);
         response.addHeader(HttpHeaders.SET_COOKIE, clearRefreshTokenCookie().toString());
 
+        return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/change-password")
+    public ResponseEntity<Void> changePassword(
+            @Valid @RequestBody ChangePasswordRequest request,
+            HttpServletResponse response
+    ) {
+        authService.changeUserPassword(request);
+        response.addHeader(HttpHeaders.SET_COOKIE, clearRefreshTokenCookie().toString());
         return ResponseEntity.noContent().build();
     }
 

@@ -2,6 +2,7 @@ package com.theninjadev.taskflowapi.services;
 
 import com.theninjadev.taskflowapi.config.JwtConfig;
 import com.theninjadev.taskflowapi.dtos.auth.AuthResult;
+import com.theninjadev.taskflowapi.dtos.auth.ChangePasswordRequest;
 import com.theninjadev.taskflowapi.dtos.auth.LoginRequest;
 import com.theninjadev.taskflowapi.dtos.auth.RegisterRequest;
 import com.theninjadev.taskflowapi.entities.RefreshToken;
@@ -12,12 +13,15 @@ import com.theninjadev.taskflowapi.exceptions.UserExistsException;
 import com.theninjadev.taskflowapi.mappers.UserMapper;
 import com.theninjadev.taskflowapi.repositories.RefreshTokenRepository;
 import com.theninjadev.taskflowapi.repositories.UserRepository;
+import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.OffsetDateTime;
+import java.util.UUID;
 
 @Service
 @AllArgsConstructor
@@ -86,6 +90,20 @@ public class AuthService {
         existingToken.setRevoked(true);
         refreshTokenRepository.save(existingToken);
 
+    }
+
+    @Transactional
+    public void changeUserPassword(ChangePasswordRequest request) {
+        var userId = (UUID) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        var user = userRepository.findById(userId).orElseThrow();
+
+        if (!passwordEncoder.matches(request.getOldPassword(), user.getPasswordHash()))
+            throw new InvalidCredentialsException();
+
+        user.setPasswordHash(passwordEncoder.encode(request.getNewPassword()));
+        userRepository.save(user);
+
+        refreshTokenRepository.revokeAllByUserId(userId);
     }
 
     private AuthResult issueTokensFor(User user) {
