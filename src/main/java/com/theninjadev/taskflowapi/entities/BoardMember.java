@@ -4,6 +4,7 @@ import com.theninjadev.taskflowapi.enums.BoardRole;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
+import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.OffsetDateTime;
 import java.util.UUID;
@@ -30,6 +31,7 @@ public class BoardMember {
     @Column(name = "role")
     private BoardRole role;
 
-    @Column(name = "joined_at")
+    @CreationTimestamp
+    @Column(name = "joined_at", updatable = false)
     private OffsetDateTime joinedAt;
 }

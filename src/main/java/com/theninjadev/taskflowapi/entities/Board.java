@@ -3,6 +3,8 @@ package com.theninjadev.taskflowapi.entities;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.OffsetDateTime;
 import java.util.*;
@@ -31,14 +33,16 @@ public class Board {
     private User owner;
 
     @Column(name = "task_counter")
-    private Integer taskCounter;
+    private Integer taskCounter = 0;
 
     @Column(name = "task_prefix")
-    private String taskPrefix;
+    private String taskPrefix = "TSK";
 
-    @Column(name = "created_at")
+    @CreationTimestamp
+    @Column(name = "created_at", updatable = false)
     private OffsetDateTime createdAt;
 
+    @UpdateTimestamp
     @Column(name = "updated_at")
     private OffsetDateTime updatedAt;
 
