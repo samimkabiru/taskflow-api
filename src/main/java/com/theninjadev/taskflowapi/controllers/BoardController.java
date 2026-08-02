@@ -10,6 +10,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -38,6 +39,15 @@ public class BoardController {
         var boardDto = boardService.getBoard(boardId, currentUserId);
 
         return ResponseEntity.ok(boardDto);
+    }
+
+    @GetMapping
+    public ResponseEntity<List<BoardDto>> listBoardsForUser() {
+        var currentUserId = getCurrentUserId();
+
+        var boardDtos = boardService.listBoardsForUser(currentUserId);
+
+        return ResponseEntity.ok(boardDtos);
     }
 
     private UUID getCurrentUserId() {

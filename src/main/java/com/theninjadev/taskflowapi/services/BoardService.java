@@ -15,6 +15,7 @@ import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -54,5 +55,11 @@ public class BoardService {
             throw new NotBoardMemberException();
 
         return boardMapper.toDto(board);
+    }
+
+    public List<BoardDto> listBoardsForUser(UUID currentUserId) {
+        var boards = boardRepository.findAllForUser(currentUserId);
+
+        return boards.stream().map(boardMapper::toDto).toList();
     }
 }
