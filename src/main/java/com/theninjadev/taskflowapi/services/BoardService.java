@@ -5,6 +5,8 @@ import com.theninjadev.taskflowapi.dtos.board.CreateBoardRequest;
 import com.theninjadev.taskflowapi.entities.Board;
 import com.theninjadev.taskflowapi.entities.BoardMember;
 import com.theninjadev.taskflowapi.enums.BoardRole;
+import com.theninjadev.taskflowapi.exceptions.BoardNotFoundException;
+import com.theninjadev.taskflowapi.exceptions.NotBoardMemberException;
 import com.theninjadev.taskflowapi.mappers.BoardMapper;
 import com.theninjadev.taskflowapi.repositories.BoardMemberRepository;
 import com.theninjadev.taskflowapi.repositories.BoardRepository;
@@ -41,6 +43,15 @@ public class BoardService {
         ownerMembership.setRole(BoardRole.OWNER);
 
         boardMemberRepository.save(ownerMembership);
+
+        return boardMapper.toDto(board);
+    }
+
+    public BoardDto getBoard(UUID boardId, UUID currentUserId) {
+        var board = boardRepository.findById(boardId).orElseThrow(BoardNotFoundException::new);
+        var isMember = boardMemberRepository.existsByBoardIdAndUserId(boardId, currentUserId);
+        if (!isMember)
+            throw new NotBoardMemberException();
 
         return boardMapper.toDto(board);
     }

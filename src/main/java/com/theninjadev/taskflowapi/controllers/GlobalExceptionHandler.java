@@ -1,8 +1,6 @@
 package com.theninjadev.taskflowapi.controllers;
 
-import com.theninjadev.taskflowapi.exceptions.InvalidCredentialsException;
-import com.theninjadev.taskflowapi.exceptions.InvalidRefreshTokenException;
-import com.theninjadev.taskflowapi.exceptions.UserExistsException;
+import com.theninjadev.taskflowapi.exceptions.*;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
@@ -44,5 +42,17 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ProblemDetail> handleInvalidRefreshToken(InvalidRefreshTokenException ex) {
         var problem = ProblemDetail.forStatusAndDetail(HttpStatus.UNAUTHORIZED, ex.getMessage());
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(problem);
+    }
+
+    @ExceptionHandler(BoardNotFoundException.class)
+    public ResponseEntity<ProblemDetail> handleBoardNotFound(BoardNotFoundException ex) {
+        var problem = ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, ex.getMessage());
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(problem);
+    }
+
+    @ExceptionHandler(NotBoardMemberException.class)
+    public ResponseEntity<ProblemDetail> handleNotBoardMember(NotBoardMemberException ex) {
+        var problem = ProblemDetail.forStatusAndDetail(HttpStatus.FORBIDDEN, ex.getMessage());
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(problem);
     }
 }

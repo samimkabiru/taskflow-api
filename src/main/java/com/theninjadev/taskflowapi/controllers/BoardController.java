@@ -8,10 +8,7 @@ import lombok.AllArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.UUID;
 
@@ -25,12 +22,26 @@ public class BoardController {
     public ResponseEntity<BoardDto> createBoard(
             @Valid @RequestBody CreateBoardRequest request
             ) {
-        var currentUserId = (UUID) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        var currentUserId = getCurrentUserId();
 
         var boardDto = boardService.createBoard(request, currentUserId);
 
         return ResponseEntity.status(HttpStatus.CREATED).body(boardDto);
     }
 
+    @GetMapping("/{id}")
+    public ResponseEntity<BoardDto> getBoard(
+            @PathVariable(value = "id") UUID boardId
+    ) {
+        var currentUserId = getCurrentUserId();
+
+        var boardDto = boardService.getBoard(boardId, currentUserId);
+
+        return ResponseEntity.ok(boardDto);
+    }
+
+    private UUID getCurrentUserId() {
+        return (UUID) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+    }
 
 }
