@@ -2,20 +2,24 @@ package com.theninjadev.taskflowapi.services;
 
 import com.theninjadev.taskflowapi.dtos.board.BoardDto;
 import com.theninjadev.taskflowapi.dtos.board.CreateBoardRequest;
+import com.theninjadev.taskflowapi.dtos.board.UpdateBoardRequest;
 import com.theninjadev.taskflowapi.entities.Board;
 import com.theninjadev.taskflowapi.entities.BoardMember;
 import com.theninjadev.taskflowapi.enums.BoardRole;
 import com.theninjadev.taskflowapi.exceptions.BoardNotFoundException;
+import com.theninjadev.taskflowapi.exceptions.InsufficientRoleException;
 import com.theninjadev.taskflowapi.exceptions.NotBoardMemberException;
 import com.theninjadev.taskflowapi.mappers.BoardMapper;
 import com.theninjadev.taskflowapi.repositories.BoardMemberRepository;
 import com.theninjadev.taskflowapi.repositories.BoardRepository;
 import com.theninjadev.taskflowapi.repositories.UserRepository;
+import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 @Service
@@ -61,5 +65,23 @@ public class BoardService {
         var boards = boardRepository.findAllForUser(currentUserId);
 
         return boards.stream().map(boardMapper::toDto).toList();
+    }
+
+    public BoardDto updateBoard(UUID boardId,@Valid UpdateBoardRequest request, UUID currentUserId) {
+        var board = boardRepository.findById(boardId).orElseThrow(BoardNotFoundException::new);
+        var member = boardMemberRepository.findByBoardIdAndUserId(boardId, currentUserId)
+                .orElseThrow(NotBoardMemberException::new);
+
+        if (!Set.of(BoardRole.OWNER, BoardRole.ADMIN).contains(member.getRole()))
+            throw new InsufficientRoleException();
+
+        if (request.getName() != null) board.setName(request.getName());
+        if (request.getDescription() != null) board.setDescription(request.getDescription());
+        if (request.getAccentColor() != null) board.setAccentColor(request.getAccentColor());
+        if (request.getTaskPrefix() != null) board.setTaskPrefix(request.getTaskPrefix());
+
+        boardRepository.save(board);
+
+        return boardMapper.toDto(board);
     }
 }

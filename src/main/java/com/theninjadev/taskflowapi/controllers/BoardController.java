@@ -2,6 +2,7 @@ package com.theninjadev.taskflowapi.controllers;
 
 import com.theninjadev.taskflowapi.dtos.board.BoardDto;
 import com.theninjadev.taskflowapi.dtos.board.CreateBoardRequest;
+import com.theninjadev.taskflowapi.dtos.board.UpdateBoardRequest;
 import com.theninjadev.taskflowapi.services.BoardService;
 import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
@@ -48,6 +49,18 @@ public class BoardController {
         var boardDtos = boardService.listBoardsForUser(currentUserId);
 
         return ResponseEntity.ok(boardDtos);
+    }
+
+    @PatchMapping("/{id}")
+    public ResponseEntity<BoardDto> updateBoard(
+            @Valid @RequestBody UpdateBoardRequest request,
+            @PathVariable(value = "id") UUID boardId
+            ) {
+        var currentUserId = getCurrentUserId();
+
+        var boardDto = boardService.updateBoard(boardId, request, currentUserId);
+
+        return ResponseEntity.ok().body(boardDto);
     }
 
     private UUID getCurrentUserId() {
