@@ -63,6 +63,17 @@ public class BoardController {
         return ResponseEntity.ok().body(boardDto);
     }
 
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteBoard(
+            @PathVariable(value = "id") UUID boardId
+    ) {
+        var currentUserId = getCurrentUserId();
+
+        boardService.deleteBoard(boardId, currentUserId);
+
+        return ResponseEntity.noContent().build();
+    }
+
     private UUID getCurrentUserId() {
         return (UUID) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
     }

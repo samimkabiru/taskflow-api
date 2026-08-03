@@ -84,4 +84,15 @@ public class BoardService {
 
         return boardMapper.toDto(board);
     }
+
+    public void deleteBoard(UUID boardId, UUID currentUserId) {
+        var board = boardRepository.findById(boardId).orElseThrow(BoardNotFoundException::new);
+        var member = boardMemberRepository.findByBoardIdAndUserId(boardId, currentUserId)
+                .orElseThrow(NotBoardMemberException::new);
+
+        if (member.getRole() != BoardRole.OWNER)
+            throw new InsufficientRoleException();
+
+        boardRepository.delete(board);
+    }
 }
