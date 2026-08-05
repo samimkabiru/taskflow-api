@@ -5,6 +5,7 @@ import com.theninjadev.taskflowapi.enums.InviteStatus;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
+import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.OffsetDateTime;
 import java.util.UUID;
@@ -37,7 +38,8 @@ public class BoardInvite {
     @Enumerated(EnumType.STRING)
     @Column(name = "status")
     private InviteStatus status;
-    
+
+    @CreationTimestamp
     @Column(name = "created_at")
     private OffsetDateTime createdAt;
 }

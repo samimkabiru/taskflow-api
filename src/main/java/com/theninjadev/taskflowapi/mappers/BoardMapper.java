@@ -1,8 +1,10 @@
 package com.theninjadev.taskflowapi.mappers;
 
 import com.theninjadev.taskflowapi.dtos.board.BoardDto;
+import com.theninjadev.taskflowapi.dtos.board.BoardInviteDto;
 import com.theninjadev.taskflowapi.dtos.board.BoardMemberDto;
 import com.theninjadev.taskflowapi.entities.Board;
+import com.theninjadev.taskflowapi.entities.BoardInvite;
 import com.theninjadev.taskflowapi.entities.BoardMember;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
@@ -18,4 +20,7 @@ public interface BoardMapper {
     @Mapping(source = "user.email", target = "userEmail")
     @Mapping(source = "role", target = "role")
     BoardMemberDto toDto(BoardMember boardMember);
+
+    @Mapping(source = "board.id", target = "boardId")
+    BoardInviteDto toDto(BoardInvite boardInvite);
 }
