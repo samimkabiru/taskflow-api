@@ -3,6 +3,7 @@ package com.theninjadev.taskflowapi.services;
 import com.theninjadev.taskflowapi.dtos.board.BoardInviteDto;
 import com.theninjadev.taskflowapi.dtos.board.BoardMemberDto;
 import com.theninjadev.taskflowapi.dtos.board.InviteMemberRequest;
+import com.theninjadev.taskflowapi.dtos.board.UpdateMemberRoleRequest;
 import com.theninjadev.taskflowapi.entities.BoardInvite;
 import com.theninjadev.taskflowapi.entities.BoardMember;
 import com.theninjadev.taskflowapi.enums.BoardInviteRole;
@@ -20,7 +21,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 
@@ -109,5 +109,41 @@ public class BoardMembershipService {
         }
 
         return boardMapper.toDto(boardMember);
+    }
+
+    public BoardMemberDto updateMemberRole(
+            UUID boardId,
+            UUID targetUserId,
+            UpdateMemberRoleRequest request,
+            UUID currentUserId) {
+
+        var currentBoardMember = boardMemberRepository
+                .findByBoardIdAndUserId(boardId, currentUserId)
+                .orElseThrow(NotBoardMemberException::new);
+
+        if (!Set.of(BoardRole.OWNER, BoardRole.ADMIN).contains(currentBoardMember.getRole()))
+            throw new InsufficientRoleException();
+
+        var targetBoardMember = boardMemberRepository
+                .findByBoardIdAndUserId(boardId, targetUserId)
+                .orElseThrow(NotBoardMemberException::new);
+
+        if (targetBoardMember.getRole() == BoardRole.OWNER)
+            throw new CannotRemoveOwnerException();
+
+        BoardRole role;
+        try {
+            role = BoardRole.valueOf(request.getRole().toUpperCase());
+        } catch (IllegalArgumentException e) {
+            throw new InvalidBoardRoleException();
+        }
+
+        if (role == BoardRole.OWNER)
+            throw new InvalidBoardRoleException();
+
+        targetBoardMember.setRole(role);
+
+        boardMemberRepository.save(targetBoardMember);
+        return boardMapper.toDto(targetBoardMember);
     }
 }

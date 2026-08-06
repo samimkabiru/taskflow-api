@@ -3,6 +3,7 @@ package com.theninjadev.taskflowapi.controllers;
 import com.theninjadev.taskflowapi.dtos.board.BoardInviteDto;
 import com.theninjadev.taskflowapi.dtos.board.BoardMemberDto;
 import com.theninjadev.taskflowapi.dtos.board.InviteMemberRequest;
+import com.theninjadev.taskflowapi.dtos.board.UpdateMemberRoleRequest;
 import com.theninjadev.taskflowapi.services.BoardMembershipService;
 import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
@@ -51,6 +52,19 @@ public class BoardMemberController {
         var currentUserId = getCurrentUserId();
 
         var boardMemberDto = boardMembershipService.acceptInvite(inviteId, currentUserId);
+
+        return ResponseEntity.ok(boardMemberDto);
+    }
+
+    @PatchMapping("/{boardId}/members/{userId}")
+    public ResponseEntity<BoardMemberDto> updateMemberRole(
+            @PathVariable UUID boardId,
+            @PathVariable(value = "userId") UUID targetUserId,
+            @Valid @RequestBody UpdateMemberRoleRequest request
+            ) {
+        var currentUserId = getCurrentUserId();
+
+        var boardMemberDto = boardMembershipService.updateMemberRole(boardId, targetUserId, request, currentUserId);
 
         return ResponseEntity.ok(boardMemberDto);
     }
