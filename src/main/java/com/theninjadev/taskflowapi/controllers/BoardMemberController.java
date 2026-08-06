@@ -81,6 +81,17 @@ public class BoardMemberController {
         return ResponseEntity.noContent().build();
     }
 
+    @DeleteMapping("/{id}/leave")
+    public ResponseEntity<BoardMemberDto> leaveBoard(
+            @PathVariable(value = "id") UUID boardId
+    ) {
+        var currentUserId = getCurrentUserId();
+
+        boardMembershipService.leaveBoard(boardId, currentUserId);
+
+        return ResponseEntity.noContent().build();
+    }
+
     private UUID getCurrentUserId() {
         return (UUID) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
     }

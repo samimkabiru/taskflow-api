@@ -142,6 +142,14 @@ public class BoardMembershipService {
 
     }
 
+    public void leaveBoard(UUID boardId, UUID currentUserId) {
+        boardRepository.findById(boardId).orElseThrow(BoardNotFoundException::new);
+
+        var targetBoardMember = guardTargetNotOwner(boardId, currentUserId);
+
+        boardMemberRepository.delete(targetBoardMember);
+    }
+
     private BoardMember requireOwnerOrAdmin(UUID boardId, UUID currentUserId) {
         var currentBoardMember = boardMemberRepository
                 .findByBoardIdAndUserId(boardId, currentUserId)
