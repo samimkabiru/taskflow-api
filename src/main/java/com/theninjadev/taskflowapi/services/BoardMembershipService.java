@@ -34,6 +34,7 @@ public class BoardMembershipService {
     private final UserRepository userRepository;
 
     public List<BoardMemberDto> getBoardMembers(UUID boardId, UUID currentUserId) {
+        boardRepository.findById(boardId).orElseThrow(BoardNotFoundException::new);
         var isMember = boardMemberRepository.existsByBoardIdAndUserId(boardId, currentUserId);
 
         if (!isMember)
@@ -48,12 +49,7 @@ public class BoardMembershipService {
         var email = request.getEmail().trim().toLowerCase();
         var board = boardRepository.findById(boardId).orElseThrow(BoardNotFoundException::new);
 
-        var boardMember = boardMemberRepository
-                .findByBoardIdAndUserId(boardId, currentUserId)
-                .orElseThrow(NotBoardMemberException::new);
-
-        if (!Set.of(BoardRole.OWNER, BoardRole.ADMIN).contains(boardMember.getRole()))
-            throw new InsufficientRoleException();
+        var currentBoardMember = requireOwnerOrAdmin(boardId, currentUserId);
 
         var invitedUser = userRepository.findByEmail(email).orElse(null);
         var invitedUserIsMember = invitedUser != null && boardMemberRepository.existsByBoardIdAndUserId(boardId, invitedUser.getId());
@@ -73,7 +69,7 @@ public class BoardMembershipService {
         boardInvite.setEmail(email);
         boardInvite.setRole(role);
         boardInvite.setStatus(InviteStatus.PENDING);
-        boardInvite.setInvitedBy(boardMember.getUser());
+        boardInvite.setInvitedBy(currentBoardMember.getUser());
 
         try {
             boardInviteRepository.save(boardInvite);
@@ -117,19 +113,9 @@ public class BoardMembershipService {
             UpdateMemberRoleRequest request,
             UUID currentUserId) {
 
-        var currentBoardMember = boardMemberRepository
-                .findByBoardIdAndUserId(boardId, currentUserId)
-                .orElseThrow(NotBoardMemberException::new);
+        requireOwnerOrAdmin(boardId, currentUserId);
 
-        if (!Set.of(BoardRole.OWNER, BoardRole.ADMIN).contains(currentBoardMember.getRole()))
-            throw new InsufficientRoleException();
-
-        var targetBoardMember = boardMemberRepository
-                .findByBoardIdAndUserId(boardId, targetUserId)
-                .orElseThrow(NotBoardMemberException::new);
-
-        if (targetBoardMember.getRole() == BoardRole.OWNER)
-            throw new CannotRemoveOwnerException();
+        var targetBoardMember = guardTargetNotOwner(boardId, targetUserId);
 
         BoardRole role;
         try {
@@ -145,5 +131,36 @@ public class BoardMembershipService {
 
         boardMemberRepository.save(targetBoardMember);
         return boardMapper.toDto(targetBoardMember);
+    }
+
+    public void removeMember(UUID boardId, UUID targetUserId, UUID currentUserId) {
+        requireOwnerOrAdmin(boardId, currentUserId);
+
+        var targetBoardMember = guardTargetNotOwner(boardId, targetUserId);
+
+        boardMemberRepository.delete(targetBoardMember);
+
+    }
+
+    private BoardMember requireOwnerOrAdmin(UUID boardId, UUID currentUserId) {
+        var currentBoardMember = boardMemberRepository
+                .findByBoardIdAndUserId(boardId, currentUserId)
+                .orElseThrow(NotBoardMemberException::new);
+
+        if (!Set.of(BoardRole.OWNER, BoardRole.ADMIN).contains(currentBoardMember.getRole()))
+            throw new InsufficientRoleException();
+
+        return currentBoardMember;
+    }
+
+    private BoardMember guardTargetNotOwner(UUID boardId, UUID targetUserId) {
+        var targetBoardMember = boardMemberRepository
+                .findByBoardIdAndUserId(boardId, targetUserId)
+                .orElseThrow(NotBoardMemberException::new);
+
+        if (targetBoardMember.getRole() == BoardRole.OWNER)
+            throw new CannotRemoveOwnerException();
+
+        return targetBoardMember;
     }
 }

@@ -69,6 +69,18 @@ public class BoardMemberController {
         return ResponseEntity.ok(boardMemberDto);
     }
 
+    @DeleteMapping("/{boardId}/members/{userId}")
+    public ResponseEntity<Void> removeMember(
+            @PathVariable UUID boardId,
+            @PathVariable(value = "userId") UUID targetUserId
+    ) {
+        var currentUserId = getCurrentUserId();
+
+        boardMembershipService.removeMember(boardId, targetUserId, currentUserId);
+
+        return ResponseEntity.noContent().build();
+    }
+
     private UUID getCurrentUserId() {
         return (UUID) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
     }
