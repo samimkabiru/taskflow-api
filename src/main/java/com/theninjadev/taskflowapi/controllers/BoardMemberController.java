@@ -43,6 +43,18 @@ public class BoardMemberController {
         return ResponseEntity.ok(boardInvite);
     }
 
+
+    @PostMapping("/invites/{id}/accept")
+    public ResponseEntity<BoardMemberDto> acceptInvite(
+            @PathVariable(value = "id") UUID inviteId
+    ) {
+        var currentUserId = getCurrentUserId();
+
+        var boardMemberDto = boardMembershipService.acceptInvite(inviteId, currentUserId);
+
+        return ResponseEntity.ok(boardMemberDto);
+    }
+
     private UUID getCurrentUserId() {
         return (UUID) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
     }

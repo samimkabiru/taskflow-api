@@ -4,6 +4,7 @@ import com.theninjadev.taskflowapi.dtos.board.BoardInviteDto;
 import com.theninjadev.taskflowapi.dtos.board.BoardMemberDto;
 import com.theninjadev.taskflowapi.dtos.board.InviteMemberRequest;
 import com.theninjadev.taskflowapi.entities.BoardInvite;
+import com.theninjadev.taskflowapi.entities.BoardMember;
 import com.theninjadev.taskflowapi.enums.BoardInviteRole;
 import com.theninjadev.taskflowapi.enums.BoardRole;
 import com.theninjadev.taskflowapi.enums.InviteStatus;
@@ -12,11 +13,14 @@ import com.theninjadev.taskflowapi.mappers.BoardMapper;
 import com.theninjadev.taskflowapi.repositories.BoardInviteRepository;
 import com.theninjadev.taskflowapi.repositories.BoardMemberRepository;
 import com.theninjadev.taskflowapi.repositories.BoardRepository;
+import com.theninjadev.taskflowapi.repositories.UserRepository;
 import lombok.AllArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 
@@ -27,6 +31,7 @@ public class BoardMembershipService {
     private final BoardMapper boardMapper;
     private final BoardInviteRepository boardInviteRepository;
     private final BoardRepository boardRepository;
+    private final UserRepository userRepository;
 
     public List<BoardMemberDto> getBoardMembers(UUID boardId, UUID currentUserId) {
         var isMember = boardMemberRepository.existsByBoardIdAndUserId(boardId, currentUserId);
@@ -42,7 +47,6 @@ public class BoardMembershipService {
     public BoardInviteDto inviteMember(UUID boardId, InviteMemberRequest request, UUID currentUserId) {
         var email = request.getEmail().trim().toLowerCase();
         var board = boardRepository.findById(boardId).orElseThrow(BoardNotFoundException::new);
-        BoardInviteRole role;
 
         var boardMember = boardMemberRepository
                 .findByBoardIdAndUserId(boardId, currentUserId)
@@ -51,6 +55,13 @@ public class BoardMembershipService {
         if (!Set.of(BoardRole.OWNER, BoardRole.ADMIN).contains(boardMember.getRole()))
             throw new InsufficientRoleException();
 
+        var invitedUser = userRepository.findByEmail(email).orElse(null);
+        var invitedUserIsMember = invitedUser != null && boardMemberRepository.existsByBoardIdAndUserId(boardId, invitedUser.getId());
+
+        if (invitedUserIsMember)
+            throw new AlreadyBoardMemberException();
+
+        BoardInviteRole role;
         try {
             role = BoardInviteRole.valueOf(request.getRole().toUpperCase());
         } catch (IllegalArgumentException e) {
@@ -71,5 +82,32 @@ public class BoardMembershipService {
         }
 
         return boardMapper.toDto(boardInvite);
+    }
+
+    @Transactional
+    public BoardMemberDto acceptInvite(UUID inviteId, UUID currentUserId) {
+        var invite = boardInviteRepository.findById(inviteId).orElseThrow(InviteNotFoundException::new);
+        var board = invite.getBoard();
+        var currentUser = userRepository.findById(currentUserId).orElseThrow();
+
+        if (!currentUser.getEmail().equalsIgnoreCase(invite.getEmail()))
+            throw new InviteEmailMismatchException();
+
+        invite.setStatus(InviteStatus.ACCEPTED);
+
+        boardInviteRepository.save(invite);
+
+        var boardMember = new BoardMember();
+        boardMember.setUser(currentUser);
+        boardMember.setBoard(board);
+        boardMember.setRole(BoardRole.valueOf(invite.getRole().name()));
+
+        try {
+            boardMemberRepository.saveAndFlush(boardMember);
+        } catch (DataIntegrityViolationException e) {
+            throw new AlreadyBoardMemberException();
+        }
+
+        return boardMapper.toDto(boardMember);
     }
 }

@@ -73,4 +73,22 @@ public class GlobalExceptionHandler {
         var problem = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.getMessage());
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(problem);
     }
+
+    @ExceptionHandler(InviteNotFoundException.class)
+    public ResponseEntity<ProblemDetail> handleInviteNotFound(InviteNotFoundException ex) {
+        var problem = ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, ex.getMessage());
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(problem);
+    }
+
+    @ExceptionHandler(InviteEmailMismatchException.class)
+    public ResponseEntity<ProblemDetail> handleInviteEmailMismatch(InviteEmailMismatchException ex) {
+        var problem = ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.getMessage());
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(problem);
+    }
+
+    @ExceptionHandler(AlreadyBoardMemberException.class)
+    public ResponseEntity<ProblemDetail> handleAlreadyBoardMember(AlreadyBoardMemberException ex) {
+        var problem = ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.getMessage());
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(problem);
+    }
 }
