@@ -8,7 +8,6 @@ import com.theninjadev.taskflowapi.entities.TaskList;
 import com.theninjadev.taskflowapi.exceptions.TaskListNotFoundException;
 import com.theninjadev.taskflowapi.mappers.TaskListMapper;
 import com.theninjadev.taskflowapi.repositories.TaskListRepository;
-import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -57,9 +56,9 @@ public class TaskListService {
     public TaskListDto updateTaskList(UUID listId, UpdateTaskListRequest request, UUID currentUserId) {
         var tasklist = getTaskListAndVerifyContributor(listId, currentUserId);
 
-        tasklist.setTitle(request.getTitle());
-        taskListRepository.save(tasklist);
+        if (request.getTitle() != null) tasklist.setTitle(request.getTitle());
 
+        taskListRepository.save(tasklist);
         return taskListMapper.toDto(tasklist);
     }
 
