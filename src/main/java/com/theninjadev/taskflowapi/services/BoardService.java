@@ -54,9 +54,7 @@ public class BoardService {
 
     public BoardDto getBoard(UUID boardId, UUID currentUserId) {
         var board = getBoardOrThrow(boardId);
-        var isMember = boardMemberRepository.existsByBoardIdAndUserId(boardId, currentUserId);
-        if (!isMember)
-            throw new NotBoardMemberException();
+        requireMembership(boardId, currentUserId);
 
         return boardMapper.toDto(board);
     }
@@ -98,6 +96,12 @@ public class BoardService {
 
     Board getBoardOrThrow(UUID boardId) {
         return boardRepository.findById(boardId).orElseThrow(BoardNotFoundException::new);
+    }
+
+    void requireMembership(UUID boardId, UUID currentUserId) {
+        var isMember = boardMemberRepository.existsByBoardIdAndUserId(boardId, currentUserId);
+        if (!isMember)
+            throw new NotBoardMemberException();
     }
 
     BoardMember requireContributor(UUID boardId, UUID currentUserId) {

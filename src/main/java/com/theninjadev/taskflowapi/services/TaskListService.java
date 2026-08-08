@@ -4,10 +4,12 @@ import com.theninjadev.taskflowapi.dtos.tasklist.CreateTaskListRequest;
 import com.theninjadev.taskflowapi.dtos.tasklist.TaskListDto;
 import com.theninjadev.taskflowapi.entities.TaskList;
 import com.theninjadev.taskflowapi.mappers.TaskListMapper;
+import com.theninjadev.taskflowapi.repositories.BoardMemberRepository;
 import com.theninjadev.taskflowapi.repositories.TaskListRepository;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -36,5 +38,16 @@ public class TaskListService {
         taskListRepository.saveAndFlush(taskList);
 
         return taskListMapper.toDto(taskList);
+    }
+
+    public List<TaskListDto> getTaskListsForBoard(UUID boardId, UUID currentUserId) {
+        boardService.getBoardOrThrow(boardId);
+        boardService.requireMembership(boardId, currentUserId);
+
+        return taskListRepository
+                .findByBoardIdOrderByPositionAsc(boardId)
+                .stream()
+                .map(taskListMapper::toDto)
+                .toList();
     }
 }

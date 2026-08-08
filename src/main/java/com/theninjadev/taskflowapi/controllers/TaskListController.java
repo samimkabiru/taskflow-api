@@ -7,11 +7,9 @@ import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -30,6 +28,17 @@ public class TaskListController {
         var taskListDto = taskListService.createTaskList(boardId, request, currentUserId);
 
         return ResponseEntity.ok().body(taskListDto);
+    }
+
+    @GetMapping("/boards/{id}/lists")
+    public ResponseEntity<List<TaskListDto>> getTaskListsForBoard(
+            @PathVariable(value = "id") UUID boardId
+    ) {
+        var currentUserId = getCurrentUserId();
+
+        var taskListsDtos = taskListService.getTaskListsForBoard(boardId,  currentUserId);
+
+        return ResponseEntity.ok(taskListsDtos);
     }
 
     private UUID getCurrentUserId() {
