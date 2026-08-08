@@ -2,9 +2,10 @@ package com.theninjadev.taskflowapi.services;
 
 import com.theninjadev.taskflowapi.dtos.tasklist.CreateTaskListRequest;
 import com.theninjadev.taskflowapi.dtos.tasklist.TaskListDto;
+import com.theninjadev.taskflowapi.dtos.tasklist.UpdateTaskListRequest;
 import com.theninjadev.taskflowapi.entities.TaskList;
+import com.theninjadev.taskflowapi.exceptions.TaskListNotFoundException;
 import com.theninjadev.taskflowapi.mappers.TaskListMapper;
-import com.theninjadev.taskflowapi.repositories.BoardMemberRepository;
 import com.theninjadev.taskflowapi.repositories.TaskListRepository;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -49,5 +50,16 @@ public class TaskListService {
                 .stream()
                 .map(taskListMapper::toDto)
                 .toList();
+    }
+
+    public TaskListDto updateTaskList(UUID listId, UpdateTaskListRequest request, UUID currentUserId) {
+        var tasklist = taskListRepository.findById(listId).orElseThrow(TaskListNotFoundException::new);
+
+        boardService.requireContributor(tasklist.getBoard().getId(), currentUserId);
+
+        tasklist.setTitle(request.getTitle());
+        taskListRepository.save(tasklist);
+
+        return taskListMapper.toDto(tasklist);
     }
 }

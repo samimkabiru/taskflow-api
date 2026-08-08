@@ -2,6 +2,7 @@ package com.theninjadev.taskflowapi.controllers;
 
 import com.theninjadev.taskflowapi.dtos.tasklist.CreateTaskListRequest;
 import com.theninjadev.taskflowapi.dtos.tasklist.TaskListDto;
+import com.theninjadev.taskflowapi.dtos.tasklist.UpdateTaskListRequest;
 import com.theninjadev.taskflowapi.services.TaskListService;
 import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
@@ -39,6 +40,18 @@ public class TaskListController {
         var taskListsDtos = taskListService.getTaskListsForBoard(boardId,  currentUserId);
 
         return ResponseEntity.ok(taskListsDtos);
+    }
+
+    @PatchMapping("/lists/{id}")
+    public ResponseEntity<TaskListDto> updateTaskList(
+            @PathVariable(value = "id") UUID listId,
+            @Valid @RequestBody UpdateTaskListRequest request
+    ) {
+        var currentUserId = getCurrentUserId();
+
+        var updatedTaskListDto = taskListService.updateTaskList(listId, request, currentUserId);
+
+        return ResponseEntity.ok(updatedTaskListDto);
     }
 
     private UUID getCurrentUserId() {
