@@ -1,6 +1,7 @@
 package com.theninjadev.taskflowapi.controllers;
 
 import com.theninjadev.taskflowapi.dtos.tasklist.CreateTaskListRequest;
+import com.theninjadev.taskflowapi.dtos.tasklist.ReorderTaskListRequest;
 import com.theninjadev.taskflowapi.dtos.tasklist.TaskListDto;
 import com.theninjadev.taskflowapi.dtos.tasklist.UpdateTaskListRequest;
 import com.theninjadev.taskflowapi.services.TaskListService;
@@ -63,6 +64,18 @@ public class TaskListController {
         taskListService.deleteTaskList(listId, currentUserId);
 
         return ResponseEntity.noContent().build();
+    }
+
+    @PatchMapping("/lists/{id}/reorder")
+    public ResponseEntity<TaskListDto> reorderTaskList(
+            @PathVariable(value = "id") UUID listId,
+            @Valid @RequestBody ReorderTaskListRequest request
+    ) {
+        var currentUserId = getCurrentUserId();
+
+        var reorderedTaskListDto = taskListService.reorderTaskList(listId, request, currentUserId);
+
+        return ResponseEntity.ok(reorderedTaskListDto);
     }
 
     private UUID getCurrentUserId() {
