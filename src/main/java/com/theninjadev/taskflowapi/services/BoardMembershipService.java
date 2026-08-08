@@ -13,7 +13,6 @@ import com.theninjadev.taskflowapi.exceptions.*;
 import com.theninjadev.taskflowapi.mappers.BoardMapper;
 import com.theninjadev.taskflowapi.repositories.BoardInviteRepository;
 import com.theninjadev.taskflowapi.repositories.BoardMemberRepository;
-import com.theninjadev.taskflowapi.repositories.BoardRepository;
 import com.theninjadev.taskflowapi.repositories.UserRepository;
 import lombok.AllArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -30,11 +29,11 @@ public class BoardMembershipService {
     private final BoardMemberRepository boardMemberRepository;
     private final BoardMapper boardMapper;
     private final BoardInviteRepository boardInviteRepository;
-    private final BoardRepository boardRepository;
     private final UserRepository userRepository;
+    private final BoardService boardService;
 
     public List<BoardMemberDto> getBoardMembers(UUID boardId, UUID currentUserId) {
-        boardRepository.findById(boardId).orElseThrow(BoardNotFoundException::new);
+        boardService.getBoardOrThrow(boardId);
         var isMember = boardMemberRepository.existsByBoardIdAndUserId(boardId, currentUserId);
 
         if (!isMember)
@@ -47,7 +46,7 @@ public class BoardMembershipService {
 
     public BoardInviteDto inviteMember(UUID boardId, InviteMemberRequest request, UUID currentUserId) {
         var email = request.getEmail().trim().toLowerCase();
-        var board = boardRepository.findById(boardId).orElseThrow(BoardNotFoundException::new);
+        var board = boardService.getBoardOrThrow(boardId);
 
         var currentBoardMember = requireOwnerOrAdmin(boardId, currentUserId);
 
@@ -143,7 +142,7 @@ public class BoardMembershipService {
     }
 
     public void leaveBoard(UUID boardId, UUID currentUserId) {
-        boardRepository.findById(boardId).orElseThrow(BoardNotFoundException::new);
+        boardService.getBoardOrThrow(boardId);
 
         var targetBoardMember = guardTargetNotOwner(boardId, currentUserId);
 

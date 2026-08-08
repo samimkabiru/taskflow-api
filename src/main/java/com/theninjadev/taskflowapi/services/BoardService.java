@@ -53,7 +53,7 @@ public class BoardService {
     }
 
     public BoardDto getBoard(UUID boardId, UUID currentUserId) {
-        var board = boardRepository.findById(boardId).orElseThrow(BoardNotFoundException::new);
+        var board = getBoardOrThrow(boardId);
         var isMember = boardMemberRepository.existsByBoardIdAndUserId(boardId, currentUserId);
         if (!isMember)
             throw new NotBoardMemberException();
@@ -68,7 +68,7 @@ public class BoardService {
     }
 
     public BoardDto updateBoard(UUID boardId,@Valid UpdateBoardRequest request, UUID currentUserId) {
-        var board = boardRepository.findById(boardId).orElseThrow(BoardNotFoundException::new);
+        var board = getBoardOrThrow(boardId);
         var member = boardMemberRepository.findByBoardIdAndUserId(boardId, currentUserId)
                 .orElseThrow(NotBoardMemberException::new);
 
@@ -86,7 +86,7 @@ public class BoardService {
     }
 
     public void deleteBoard(UUID boardId, UUID currentUserId) {
-        var board = boardRepository.findById(boardId).orElseThrow(BoardNotFoundException::new);
+        var board = getBoardOrThrow(boardId);
         var member = boardMemberRepository.findByBoardIdAndUserId(boardId, currentUserId)
                 .orElseThrow(NotBoardMemberException::new);
 
@@ -94,5 +94,19 @@ public class BoardService {
             throw new InsufficientRoleException();
 
         boardRepository.delete(board);
+    }
+
+    Board getBoardOrThrow(UUID boardId) {
+        return boardRepository.findById(boardId).orElseThrow(BoardNotFoundException::new);
+    }
+
+    BoardMember requireContributor(UUID boardId, UUID currentUserId) {
+        var currentBoardMember = boardMemberRepository.findByBoardIdAndUserId(boardId, currentUserId)
+                .orElseThrow(NotBoardMemberException::new);
+
+        if (!Set.of(BoardRole.OWNER, BoardRole.MEMBER, BoardRole.ADMIN).contains(currentBoardMember.getRole()))
+            throw new InsufficientRoleException();
+
+        return currentBoardMember;
     }
 }
