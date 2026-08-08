@@ -54,6 +54,17 @@ public class TaskListController {
         return ResponseEntity.ok(updatedTaskListDto);
     }
 
+    @DeleteMapping("/lists/{id}")
+    public ResponseEntity<Void> deleteTaskList(
+            @PathVariable(value = "id") UUID listId
+    ) {
+        var currentUserId = getCurrentUserId();
+
+        taskListService.deleteTaskList(listId, currentUserId);
+
+        return ResponseEntity.noContent().build();
+    }
+
     private UUID getCurrentUserId() {
         return (UUID) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
     }

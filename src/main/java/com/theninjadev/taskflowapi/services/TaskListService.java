@@ -62,4 +62,12 @@ public class TaskListService {
 
         return taskListMapper.toDto(tasklist);
     }
+
+    public void deleteTaskList(UUID listId, UUID currentUserId) {
+        var tasklist = taskListRepository.findById(listId).orElseThrow(TaskListNotFoundException::new);
+
+        boardService.requireContributor(tasklist.getBoard().getId(), currentUserId);
+
+        taskListRepository.delete(tasklist);
+    }
 }
