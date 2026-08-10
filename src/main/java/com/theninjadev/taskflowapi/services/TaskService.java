@@ -2,6 +2,7 @@ package com.theninjadev.taskflowapi.services;
 
 import com.theninjadev.taskflowapi.dtos.task.CreateTaskRequest;
 import com.theninjadev.taskflowapi.dtos.task.TaskDto;
+import com.theninjadev.taskflowapi.dtos.task.UpdateTaskRequest;
 import com.theninjadev.taskflowapi.entities.Task;
 import com.theninjadev.taskflowapi.entities.User;
 import com.theninjadev.taskflowapi.enums.TaskPriority;
@@ -38,23 +39,8 @@ public class TaskService {
         var board = taskList.getBoard();
         var currentUser = userRepository.findById(currentUserId).orElseThrow(UserNotFoundException::new);
         var newCounter = taskRepository.incrementTaskCounter(board.getId());
-
-        TaskPriority priority = null;
-        if (request.getPriority() != null) {
-            try {
-                priority = TaskPriority.valueOf(request.getPriority().toUpperCase());
-            } catch (IllegalArgumentException e) {
-                throw new InvalidTaskPriorityException();
-            }
-        }
-
-        User assignee = null;
-        if (request.getAssigneeId() != null) {
-            var isMember = boardMemberRepository.existsByBoardIdAndUserId(board.getId(), request.getAssigneeId());
-            if (!isMember)
-                throw new AssigneeNotBoardMemberException();
-            assignee = userRepository.findById(request.getAssigneeId()).orElseThrow(UserNotFoundException::new);
-        }
+        var priority = parsePriority(request.getPriority());
+        var assignee = resolveAssignee(request.getAssigneeId(), board.getId());
 
         double newPosition = taskRepository
                 .findTopByTaskListIdOrderByPositionDesc(taskList.getId())
@@ -65,11 +51,11 @@ public class TaskService {
         task.setTitle(request.getTitle());
         task.setPosition(newPosition);
         task.setTaskList(taskList);
-        task.setAssignee(assignee);
         task.setShortCode(board.getTaskPrefix() + "-" + newCounter);
         task.setBoard(board);
         task.setCreatedBy(currentUser);
 
+        if (request.getAssigneeId() != null) task.setAssignee(assignee);
         if (request.getDescription() != null) task.setDescription(request.getDescription());
         if (request.getDueDate() != null) task.setDueDate(request.getDueDate());
         if (request.getPriority() != null) task.setPriority(priority);
@@ -101,5 +87,40 @@ public class TaskService {
                 .stream()
                 .map(taskMapper::toDto)
                 .toList();
+    }
+
+    public TaskDto updateTask(UUID taskId, UpdateTaskRequest request, UUID currentUserId) {
+        var task = taskRepository.findById(taskId).orElseThrow(TaskNotFoundException::new);
+        boardService.requireContributor(task.getBoard().getId(), currentUserId);
+
+        var priority = parsePriority(request.getPriority());
+        var assignee = resolveAssignee(request.getAssigneeId(), task.getBoard().getId());
+
+        if (request.getAssigneeId() != null) task.setAssignee(assignee);
+        if (request.getPriority() != null) task.setPriority(priority);
+        if (request.getTitle() != null) task.setTitle(request.getTitle());
+        if (request.getDescription() != null) task.setDescription(request.getDescription());
+        if (request.getDueDate() != null) task.setDueDate(request.getDueDate());
+
+        taskRepository.save(task);
+        return taskMapper.toDto(task);
+    }
+
+    private TaskPriority parsePriority(String priorityStr) {
+        if (priorityStr == null) return null;
+        try {
+            return TaskPriority.valueOf(priorityStr.toUpperCase());
+        } catch (IllegalArgumentException e) {
+            throw new InvalidTaskPriorityException();
+        }
+    }
+
+    private User resolveAssignee(UUID assigneeId, UUID boardId) {
+        if (assigneeId == null) return null;
+        var isMember = boardMemberRepository.existsByBoardIdAndUserId(boardId, assigneeId);
+        if (!isMember)
+            throw new AssigneeNotBoardMemberException();
+
+        return userRepository.findById(assigneeId).orElseThrow(UserNotFoundException::new);
     }
 }

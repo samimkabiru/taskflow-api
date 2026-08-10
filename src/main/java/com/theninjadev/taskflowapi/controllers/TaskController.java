@@ -2,6 +2,7 @@ package com.theninjadev.taskflowapi.controllers;
 
 import com.theninjadev.taskflowapi.dtos.task.CreateTaskRequest;
 import com.theninjadev.taskflowapi.dtos.task.TaskDto;
+import com.theninjadev.taskflowapi.dtos.task.UpdateTaskRequest;
 import com.theninjadev.taskflowapi.services.TaskService;
 import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
@@ -60,6 +61,16 @@ public class TaskController {
         var currentUserId = getCurrentUserId();
 
         return ResponseEntity.ok(taskService.getTasksForList(taskListId, currentUserId));
+    }
+
+    @PatchMapping("/tasks/{id}")
+    public ResponseEntity<TaskDto> updateTask(
+            @PathVariable(value = "id") UUID taskId,
+            @Valid @RequestBody UpdateTaskRequest request
+    ) {
+        var currentUserId = getCurrentUserId();
+
+        return ResponseEntity.ok(taskService.updateTask(taskId, request, currentUserId));
     }
 
     private UUID getCurrentUserId() {
