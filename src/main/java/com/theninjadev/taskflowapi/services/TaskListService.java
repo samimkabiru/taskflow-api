@@ -77,7 +77,7 @@ public class TaskListService {
         return taskListMapper.toDto(tasklist);
     }
 
-    private TaskList getTaskListAndVerifyContributor(UUID listId, UUID currentUserId) {
+    TaskList getTaskListAndVerifyContributor(UUID listId, UUID currentUserId) {
         var taskList = taskListRepository.findById(listId).orElseThrow(TaskListNotFoundException::new);
         boardService.requireContributor(taskList.getBoard().getId(), currentUserId);
         return taskList;

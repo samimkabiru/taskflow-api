@@ -9,7 +9,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-public interface TaskRepository extends JpaRepository<Task, UUID> {
+public interface TaskRepository extends JpaRepository<Task, UUID>, TaskRepositoryCustom {
 
     // Tasks within one list, in drag-order — the bread-and-butter query for rendering a column
     List<Task> findByTaskListIdOrderByPositionAsc(UUID taskListId);
@@ -21,6 +21,8 @@ public interface TaskRepository extends JpaRepository<Task, UUID> {
 
     // Needed for the short_code uniqueness check / lookups like "open TSK-142"
     Optional<Task> findByBoardIdAndShortCode(UUID boardId, String shortCode);
+
+    Optional<Task> findTopByTaskListIdOrderByPositionDesc(UUID taskListId);
 
     // Note: richer filtering (by label, due-date range, multiple criteria combined) is
     // a good candidate for a JPA Specification later rather than more derived-query methods —
