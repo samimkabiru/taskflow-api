@@ -73,6 +73,17 @@ public class TaskController {
         return ResponseEntity.ok(taskService.updateTask(taskId, request, currentUserId));
     }
 
+    @DeleteMapping("/tasks/{id}")
+    public ResponseEntity<Void> deleteTask(
+            @PathVariable(value = "id") UUID taskId
+    ) {
+        var currentUserId = getCurrentUserId();
+
+        taskService.deleteTask(taskId, currentUserId);
+
+        return ResponseEntity.noContent().build();
+    }
+
     private UUID getCurrentUserId() {
         return (UUID) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
     }

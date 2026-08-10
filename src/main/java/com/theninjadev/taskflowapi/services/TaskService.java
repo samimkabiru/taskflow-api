@@ -123,4 +123,11 @@ public class TaskService {
 
         return userRepository.findById(assigneeId).orElseThrow(UserNotFoundException::new);
     }
+
+    public void deleteTask(UUID taskId, UUID currentUserId) {
+        var task = taskRepository.findById(taskId).orElseThrow(TaskNotFoundException::new);
+
+        boardService.requireContributor(task.getBoard().getId(), currentUserId);
+        taskRepository.delete(task);
+    }
 }
