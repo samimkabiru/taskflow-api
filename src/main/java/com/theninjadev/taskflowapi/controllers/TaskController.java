@@ -7,10 +7,7 @@ import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.UUID;
 
@@ -28,6 +25,17 @@ public class TaskController {
         var currentUserId = getCurrentUserId();
 
         var taskDto = taskService.createTask(taskListId, request, currentUserId);
+
+        return ResponseEntity.ok(taskDto);
+    }
+
+    @GetMapping("/tasks/{id}")
+    public ResponseEntity<TaskDto> getTask(
+            @PathVariable(value = "id") UUID taskId
+    ) {
+        var currentUserId = getCurrentUserId();
+
+        var taskDto = taskService.getTask(taskId, currentUserId);
 
         return ResponseEntity.ok(taskDto);
     }

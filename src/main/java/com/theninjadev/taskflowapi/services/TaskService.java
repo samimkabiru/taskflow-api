@@ -7,6 +7,7 @@ import com.theninjadev.taskflowapi.entities.User;
 import com.theninjadev.taskflowapi.enums.TaskPriority;
 import com.theninjadev.taskflowapi.exceptions.AssigneeNotBoardMemberException;
 import com.theninjadev.taskflowapi.exceptions.InvalidTaskPriorityException;
+import com.theninjadev.taskflowapi.exceptions.TaskNotFoundException;
 import com.theninjadev.taskflowapi.exceptions.UserNotFoundException;
 import com.theninjadev.taskflowapi.mappers.TaskMapper;
 import com.theninjadev.taskflowapi.repositories.BoardMemberRepository;
@@ -27,6 +28,7 @@ public class TaskService {
     private final BoardMemberRepository boardMemberRepository;
     private final UserRepository userRepository;
     private final TaskMapper taskMapper;
+    private final BoardService boardService;
 
     @Transactional
     public TaskDto createTask(UUID taskListId, CreateTaskRequest request, UUID currentUserId) {
@@ -71,6 +73,13 @@ public class TaskService {
         if (request.getPriority() != null) task.setPriority(priority);
 
         taskRepository.saveAndFlush(task);
+        return taskMapper.toDto(task);
+    }
+
+    public TaskDto getTask(UUID taskId, UUID currentUserId) {
+        var task = taskRepository.findById(taskId).orElseThrow(TaskNotFoundException::new);
+        boardService.requireMembership(task.getBoard().getId(), currentUserId);
+
         return taskMapper.toDto(task);
     }
 }
