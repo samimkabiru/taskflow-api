@@ -15,6 +15,8 @@ import com.theninjadev.taskflowapi.repositories.TaskRepository;
 import com.theninjadev.taskflowapi.repositories.UserRepository;
 import jakarta.transaction.Transactional;
 import lombok.AllArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.util.UUID;
@@ -81,5 +83,12 @@ public class TaskService {
         boardService.requireMembership(task.getBoard().getId(), currentUserId);
 
         return taskMapper.toDto(task);
+    }
+
+    public Page<TaskDto> getTasksForBoard(UUID boardId, Pageable pageable, UUID currentUserId) {
+        boardService.getBoardOrThrow(boardId);
+        boardService.requireMembership(boardId, currentUserId);
+
+        return taskRepository.findByBoardId(boardId, pageable).map(taskMapper::toDto);
     }
 }

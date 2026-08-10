@@ -5,6 +5,8 @@ import com.theninjadev.taskflowapi.dtos.task.TaskDto;
 import com.theninjadev.taskflowapi.services.TaskService;
 import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
@@ -38,6 +40,16 @@ public class TaskController {
         var taskDto = taskService.getTask(taskId, currentUserId);
 
         return ResponseEntity.ok(taskDto);
+    }
+
+    @GetMapping("/boards/{id}/tasks")
+    public ResponseEntity<Page<TaskDto>> getTasksForBoard(
+            @PathVariable(value = "id") UUID boardId,
+            Pageable pageable
+    ) {
+        var currentUserId = getCurrentUserId();
+
+        return ResponseEntity.ok(taskService.getTasksForBoard(boardId, pageable, currentUserId));
     }
 
     private UUID getCurrentUserId() {
