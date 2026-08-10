@@ -11,6 +11,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -50,6 +51,15 @@ public class TaskController {
         var currentUserId = getCurrentUserId();
 
         return ResponseEntity.ok(taskService.getTasksForBoard(boardId, pageable, currentUserId));
+    }
+
+    @GetMapping("/lists/{id}/tasks")
+    public ResponseEntity<List<TaskDto>> getTasksForList(
+            @PathVariable(value = "id") UUID taskListId
+    ) {
+        var currentUserId = getCurrentUserId();
+
+        return ResponseEntity.ok(taskService.getTasksForList(taskListId, currentUserId));
     }
 
     private UUID getCurrentUserId() {

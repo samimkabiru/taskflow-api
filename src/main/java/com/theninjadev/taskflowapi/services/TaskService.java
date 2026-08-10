@@ -5,12 +5,10 @@ import com.theninjadev.taskflowapi.dtos.task.TaskDto;
 import com.theninjadev.taskflowapi.entities.Task;
 import com.theninjadev.taskflowapi.entities.User;
 import com.theninjadev.taskflowapi.enums.TaskPriority;
-import com.theninjadev.taskflowapi.exceptions.AssigneeNotBoardMemberException;
-import com.theninjadev.taskflowapi.exceptions.InvalidTaskPriorityException;
-import com.theninjadev.taskflowapi.exceptions.TaskNotFoundException;
-import com.theninjadev.taskflowapi.exceptions.UserNotFoundException;
+import com.theninjadev.taskflowapi.exceptions.*;
 import com.theninjadev.taskflowapi.mappers.TaskMapper;
 import com.theninjadev.taskflowapi.repositories.BoardMemberRepository;
+import com.theninjadev.taskflowapi.repositories.TaskListRepository;
 import com.theninjadev.taskflowapi.repositories.TaskRepository;
 import com.theninjadev.taskflowapi.repositories.UserRepository;
 import jakarta.transaction.Transactional;
@@ -19,6 +17,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -31,6 +30,7 @@ public class TaskService {
     private final UserRepository userRepository;
     private final TaskMapper taskMapper;
     private final BoardService boardService;
+    private final TaskListRepository taskListRepository;
 
     @Transactional
     public TaskDto createTask(UUID taskListId, CreateTaskRequest request, UUID currentUserId) {
@@ -90,5 +90,16 @@ public class TaskService {
         boardService.requireMembership(boardId, currentUserId);
 
         return taskRepository.findByBoardId(boardId, pageable).map(taskMapper::toDto);
+    }
+
+    public List<TaskDto> getTasksForList(UUID taskListId, UUID currentUserId) {
+        var taskList = taskListRepository.findById(taskListId).orElseThrow(TaskListNotFoundException::new);
+        boardService.requireMembership(taskList.getBoard().getId(), currentUserId);
+
+        return taskRepository
+                .findByTaskListIdOrderByPositionAsc(taskListId)
+                .stream()
+                .map(taskMapper::toDto)
+                .toList();
     }
 }
