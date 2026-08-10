@@ -83,7 +83,7 @@ public class BoardMembershipService {
     public BoardMemberDto acceptInvite(UUID inviteId, UUID currentUserId) {
         var invite = boardInviteRepository.findById(inviteId).orElseThrow(InviteNotFoundException::new);
         var board = invite.getBoard();
-        var currentUser = userRepository.findById(currentUserId).orElseThrow();
+        var currentUser = userRepository.findById(currentUserId).orElseThrow(UserNotFoundException::new);
 
         if (!currentUser.getEmail().equalsIgnoreCase(invite.getEmail()))
             throw new InviteEmailMismatchException();

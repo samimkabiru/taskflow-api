@@ -23,7 +23,7 @@ public class BoardMember {
     @JoinColumn(name = "board_id")
     private Board board;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id")
     private User user;
 

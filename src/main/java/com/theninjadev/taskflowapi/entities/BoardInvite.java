@@ -20,7 +20,7 @@ public class BoardInvite {
     @Column(name = "id")
     private UUID id;
     
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "board_id")
     private Board board;
     
@@ -31,7 +31,7 @@ public class BoardInvite {
     @Column(name = "role")
     private BoardInviteRole role;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "invited_by")
     private User invitedBy;
 

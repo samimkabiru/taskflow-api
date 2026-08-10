@@ -9,6 +9,7 @@ import com.theninjadev.taskflowapi.enums.BoardRole;
 import com.theninjadev.taskflowapi.exceptions.BoardNotFoundException;
 import com.theninjadev.taskflowapi.exceptions.InsufficientRoleException;
 import com.theninjadev.taskflowapi.exceptions.NotBoardMemberException;
+import com.theninjadev.taskflowapi.exceptions.UserNotFoundException;
 import com.theninjadev.taskflowapi.mappers.BoardMapper;
 import com.theninjadev.taskflowapi.repositories.BoardMemberRepository;
 import com.theninjadev.taskflowapi.repositories.BoardRepository;
@@ -32,7 +33,7 @@ public class BoardService {
 
     @Transactional
     public BoardDto createBoard(CreateBoardRequest request, UUID currentUserId) {
-        var owner = userRepository.findById(currentUserId).orElseThrow();
+        var owner = userRepository.findById(currentUserId).orElseThrow(UserNotFoundException::new);
         var board = new Board();
         board.setName(request.getName());
         board.setDescription(request.getDescription());

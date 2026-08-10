@@ -10,6 +10,7 @@ import com.theninjadev.taskflowapi.entities.User;
 import com.theninjadev.taskflowapi.exceptions.InvalidCredentialsException;
 import com.theninjadev.taskflowapi.exceptions.InvalidRefreshTokenException;
 import com.theninjadev.taskflowapi.exceptions.UserExistsException;
+import com.theninjadev.taskflowapi.exceptions.UserNotFoundException;
 import com.theninjadev.taskflowapi.mappers.UserMapper;
 import com.theninjadev.taskflowapi.repositories.RefreshTokenRepository;
 import com.theninjadev.taskflowapi.repositories.UserRepository;
@@ -95,7 +96,7 @@ public class AuthService {
     @Transactional
     public void changeUserPassword(ChangePasswordRequest request) {
         var userId = (UUID) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-        var user = userRepository.findById(userId).orElseThrow();
+        var user = userRepository.findById(userId).orElseThrow(UserNotFoundException::new);
 
         if (!passwordEncoder.matches(request.getOldPassword(), user.getPasswordHash()))
             throw new InvalidCredentialsException();
