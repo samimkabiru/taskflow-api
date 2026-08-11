@@ -2,9 +2,10 @@ package com.theninjadev.taskflowapi.services;
 
 import com.theninjadev.taskflowapi.dtos.label.CreateLabelRequest;
 import com.theninjadev.taskflowapi.dtos.label.LabelDto;
+import com.theninjadev.taskflowapi.dtos.label.UpdateLabelRequest;
 import com.theninjadev.taskflowapi.entities.Label;
-import com.theninjadev.taskflowapi.exceptions.BoardNotFoundException;
 import com.theninjadev.taskflowapi.exceptions.DuplicateLabelNameException;
+import com.theninjadev.taskflowapi.exceptions.LabelNotFoundException;
 import com.theninjadev.taskflowapi.mappers.LabelMapper;
 import com.theninjadev.taskflowapi.repositories.BoardRepository;
 import com.theninjadev.taskflowapi.repositories.LabelRepository;
@@ -54,5 +55,24 @@ public class LabelService {
                 .stream()
                 .map(labelMapper::toDto)
                 .toList();
+    }
+
+    public LabelDto updateLabel(UUID labelId, UpdateLabelRequest request, UUID currentUserId) {
+        var name = request.getName().trim();
+        var label = labelRepository.findById(labelId).orElseThrow(LabelNotFoundException::new);
+        var boardId = label.getBoard().getId();
+        boardService.requireContributor(boardId, currentUserId);
+
+        if (request.getName() != null) {
+            var labelExistsInBoard = labelRepository.existsByBoardIdAndName(boardId, name);
+            if (labelExistsInBoard)
+                throw new DuplicateLabelNameException();
+        }
+
+        if (request.getName() != null) label.setName(request.getName().trim());
+        if (request.getColor() != null) label.setColor(request.getColor().toLowerCase());
+
+        labelRepository.save(label);
+        return labelMapper.toDto(label);
     }
 }

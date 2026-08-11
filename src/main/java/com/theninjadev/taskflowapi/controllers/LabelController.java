@@ -2,6 +2,7 @@ package com.theninjadev.taskflowapi.controllers;
 
 import com.theninjadev.taskflowapi.dtos.label.CreateLabelRequest;
 import com.theninjadev.taskflowapi.dtos.label.LabelDto;
+import com.theninjadev.taskflowapi.dtos.label.UpdateLabelRequest;
 import com.theninjadev.taskflowapi.services.LabelService;
 import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
@@ -34,6 +35,16 @@ public class LabelController {
         var currentUserId = getCurrentUserId();
 
         return ResponseEntity.ok(labelService.getLabelsForBoard(boardId, currentUserId));
+    }
+
+    @PatchMapping("/labels/{id}")
+    public ResponseEntity<LabelDto> updateLabel(
+            @PathVariable(value = "id") UUID labelId,
+            @Valid @RequestBody UpdateLabelRequest request
+    ) {
+        var currentUserId = getCurrentUserId();
+
+        return ResponseEntity.ok(labelService.updateLabel(labelId, request, currentUserId));
     }
 
     private UUID getCurrentUserId() {
