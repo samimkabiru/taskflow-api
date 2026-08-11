@@ -12,6 +12,7 @@ import lombok.AllArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -23,8 +24,8 @@ public class LabelService {
     private final LabelMapper labelMapper;
 
     public LabelDto createLabel(UUID boardId, CreateLabelRequest request, UUID currentUserId) {
-        var board = boardRepository.findById(boardId).orElseThrow(BoardNotFoundException::new);
         var name = request.getName().trim();
+        var board = boardService.getBoardOrThrow(boardId);
         boardService.requireContributor(boardId, currentUserId);
 
         var labelExistsInBoard = labelRepository.existsByBoardIdAndName(boardId, name);
@@ -42,5 +43,16 @@ public class LabelService {
             throw new DuplicateLabelNameException();
         }
         return labelMapper.toDto(label);
+    }
+
+    public List<LabelDto> getLabelsForBoard(UUID boardId, UUID currentUserId) {
+        boardService.getBoardOrThrow(boardId);
+        boardService.requireMembership(boardId, currentUserId);
+
+        return labelRepository
+                .findByBoardId(boardId)
+                .stream()
+                .map(labelMapper::toDto)
+                .toList();
     }
 }

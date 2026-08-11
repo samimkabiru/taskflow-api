@@ -7,11 +7,9 @@ import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -27,6 +25,15 @@ public class LabelController {
         var currentUserId = getCurrentUserId();
 
         return ResponseEntity.ok(labelService.createLabel(boardId, request, currentUserId));
+    }
+
+    @GetMapping("/boards/{id}/labels")
+    public ResponseEntity<List<LabelDto>> getLabelsForBoard(
+            @PathVariable(value = "id") UUID boardId
+    ) {
+        var currentUserId = getCurrentUserId();
+
+        return ResponseEntity.ok(labelService.getLabelsForBoard(boardId, currentUserId));
     }
 
     private UUID getCurrentUserId() {
