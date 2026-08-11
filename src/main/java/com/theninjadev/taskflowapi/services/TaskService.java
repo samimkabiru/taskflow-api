@@ -1,6 +1,7 @@
 package com.theninjadev.taskflowapi.services;
 
 import com.theninjadev.taskflowapi.dtos.task.CreateTaskRequest;
+import com.theninjadev.taskflowapi.dtos.task.MoveTaskRequest;
 import com.theninjadev.taskflowapi.dtos.task.TaskDto;
 import com.theninjadev.taskflowapi.dtos.task.UpdateTaskRequest;
 import com.theninjadev.taskflowapi.entities.Task;
@@ -106,6 +107,32 @@ public class TaskService {
         return taskMapper.toDto(task);
     }
 
+
+    public void deleteTask(UUID taskId, UUID currentUserId) {
+        var task = taskRepository.findById(taskId).orElseThrow(TaskNotFoundException::new);
+
+        boardService.requireContributor(task.getBoard().getId(), currentUserId);
+        taskRepository.delete(task);
+    }
+
+    public TaskDto moveTask(UUID taskId, MoveTaskRequest request, UUID currentUserId) {
+        var task = taskRepository.findById(taskId).orElseThrow(TaskNotFoundException::new);
+        boardService.requireContributor(task.getBoard().getId(), currentUserId);
+
+        var taskList = taskListRepository.findById(request.getTaskListId())
+                .orElseThrow(TaskListNotFoundException::new);
+
+        if (!taskList.getBoard().getId().equals(task.getBoard().getId()))
+            throw new TaskListNotOnBoardException();
+
+        // TODO: activity log
+        task.setTaskList(taskList);
+        task.setPosition(request.getPosition());
+
+        taskRepository.save(task);
+        return taskMapper.toDto(task);
+    }
+
     private TaskPriority parsePriority(String priorityStr) {
         if (priorityStr == null) return null;
         try {
@@ -122,12 +149,5 @@ public class TaskService {
             throw new AssigneeNotBoardMemberException();
 
         return userRepository.findById(assigneeId).orElseThrow(UserNotFoundException::new);
-    }
-
-    public void deleteTask(UUID taskId, UUID currentUserId) {
-        var task = taskRepository.findById(taskId).orElseThrow(TaskNotFoundException::new);
-
-        boardService.requireContributor(task.getBoard().getId(), currentUserId);
-        taskRepository.delete(task);
     }
 }

@@ -1,6 +1,7 @@
 package com.theninjadev.taskflowapi.controllers;
 
 import com.theninjadev.taskflowapi.dtos.task.CreateTaskRequest;
+import com.theninjadev.taskflowapi.dtos.task.MoveTaskRequest;
 import com.theninjadev.taskflowapi.dtos.task.TaskDto;
 import com.theninjadev.taskflowapi.dtos.task.UpdateTaskRequest;
 import com.theninjadev.taskflowapi.services.TaskService;
@@ -82,6 +83,16 @@ public class TaskController {
         taskService.deleteTask(taskId, currentUserId);
 
         return ResponseEntity.noContent().build();
+    }
+
+    @PatchMapping("/tasks/{id}/move")
+    public ResponseEntity<TaskDto> moveTask(
+            @PathVariable(value = "id") UUID taskId,
+            @Valid @RequestBody MoveTaskRequest request
+    ) {
+        var currentUserId = getCurrentUserId();
+
+        return ResponseEntity.ok(taskService.moveTask(taskId, request, currentUserId));
     }
 
     private UUID getCurrentUserId() {
