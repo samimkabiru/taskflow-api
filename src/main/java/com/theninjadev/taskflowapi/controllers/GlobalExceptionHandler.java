@@ -145,4 +145,10 @@ public class GlobalExceptionHandler {
         var problem = ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, ex.getMessage());
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(problem);
     }
+
+    @ExceptionHandler(LabelNotOnBoardException.class)
+    public ResponseEntity<ProblemDetail> handleLabelNotOnBoard(LabelNotOnBoardException ex) {
+        var problem = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.getMessage());
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(problem);
+    }
 }

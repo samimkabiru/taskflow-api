@@ -1,5 +1,6 @@
 package com.theninjadev.taskflowapi.controllers;
 
+import com.theninjadev.taskflowapi.dtos.label.AssignLabelsRequest;
 import com.theninjadev.taskflowapi.dtos.label.CreateLabelRequest;
 import com.theninjadev.taskflowapi.dtos.label.LabelDto;
 import com.theninjadev.taskflowapi.dtos.label.UpdateLabelRequest;
@@ -54,6 +55,18 @@ public class LabelController {
         var currentUserId = getCurrentUserId();
 
         labelService.deleteLabel(labelId, currentUserId);
+
+        return ResponseEntity.noContent().build();
+    }
+
+    @PutMapping("/tasks/{id}/labels")
+    public ResponseEntity<Void> assignLabelToTask(
+            @PathVariable(value = "id") UUID taskId,
+            @Valid @RequestBody AssignLabelsRequest request
+    ) {
+        var currentUserId = getCurrentUserId();
+
+        labelService.assignLabelToTask(taskId, request, currentUserId);
 
         return ResponseEntity.noContent().build();
     }
