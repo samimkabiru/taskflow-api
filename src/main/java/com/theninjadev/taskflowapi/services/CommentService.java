@@ -12,6 +12,7 @@ import com.theninjadev.taskflowapi.repositories.UserRepository;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -36,5 +37,17 @@ public class CommentService {
 
         commentRepository.save(comment);
         return commentMapper.toDto(comment);
+    }
+
+    public List<CommentDto> getCommentsForTask(UUID taskId, UUID currentUserId) {
+        var task = taskRepository.findById(taskId).orElseThrow(TaskNotFoundException::new);
+        var boardId = task.getBoard().getId();
+        boardService.requireMembership(boardId, currentUserId);
+
+        return commentRepository
+                .findByTaskIdOrderByCreatedAtAsc(taskId)
+                .stream()
+                .map(commentMapper::toDto)
+                .toList();
     }
 }

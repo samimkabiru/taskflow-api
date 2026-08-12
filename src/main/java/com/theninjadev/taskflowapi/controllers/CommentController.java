@@ -7,11 +7,9 @@ import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -28,6 +26,15 @@ public class CommentController {
         var currentUserId = getCurrentUserId();
 
         return ResponseEntity.ok(commentService.createComment(taskId, request, currentUserId));
+    }
+
+    @GetMapping("/tasks/{id}/comments")
+    public ResponseEntity<List<CommentDto>> getCommentsForTask(
+            @PathVariable(value = "id") UUID taskId
+    ) {
+        var currentUserId = getCurrentUserId();
+
+        return ResponseEntity.ok(commentService.getCommentsForTask(taskId, currentUserId));
     }
 
     private UUID getCurrentUserId() {
