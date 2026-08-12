@@ -47,6 +47,17 @@ public class LabelController {
         return ResponseEntity.ok(labelService.updateLabel(labelId, request, currentUserId));
     }
 
+    @DeleteMapping("/labels/{id}")
+    public ResponseEntity<Void> deleteLabel(
+            @PathVariable(value = "id") UUID labelId
+    ) {
+        var currentUserId = getCurrentUserId();
+
+        labelService.deleteLabel(labelId, currentUserId);
+
+        return ResponseEntity.noContent().build();
+    }
+
     private UUID getCurrentUserId() {
         return (UUID) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
     }

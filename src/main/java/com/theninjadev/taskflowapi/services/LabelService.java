@@ -75,4 +75,12 @@ public class LabelService {
         labelRepository.save(label);
         return labelMapper.toDto(label);
     }
+
+    public void deleteLabel(UUID labelId, UUID currentUserId) {
+        var label = labelRepository.findById(labelId).orElseThrow(LabelNotFoundException::new);
+        var boardId = label.getBoard().getId();
+        boardService.requireContributor(boardId, currentUserId);
+
+        labelRepository.delete(label);
+    }
 }
