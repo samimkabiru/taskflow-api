@@ -65,4 +65,15 @@ public class CommentService {
         commentRepository.save(comment);
         return commentMapper.toDto(comment);
     }
+
+    public void deleteComment(UUID commentId, UUID currentUserId) {
+        var comment = commentRepository.findById(commentId).orElseThrow(CommentNotFoundException::new);
+        var boardId = comment.getTask().getBoard().getId();
+
+        if (!comment.getAuthor().getId().equals(currentUserId)) {
+            boardService.requireOwnerOrAdmin(boardId, currentUserId);
+        }
+
+        commentRepository.delete(comment);
+    }
 }

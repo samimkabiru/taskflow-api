@@ -48,6 +48,17 @@ public class CommentController {
         return ResponseEntity.ok(commentService.updateComment(commentId, request, currentUserId));
     }
 
+    @DeleteMapping("/comments/{id}")
+    public ResponseEntity<Void> deleteComment(
+            @PathVariable(value = "id") UUID commentId
+    ) {
+        var currentUserId = getCurrentUserId();
+
+        commentService.deleteComment(commentId, currentUserId);
+
+        return ResponseEntity.ok().build();
+    }
+
     private UUID getCurrentUserId() {
         return (UUID) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
     }

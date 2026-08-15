@@ -105,6 +105,17 @@ public class BoardService {
             throw new NotBoardMemberException();
     }
 
+    BoardMember requireOwnerOrAdmin(UUID boardId, UUID currentUserId) {
+        var currentBoardMember = boardMemberRepository
+                .findByBoardIdAndUserId(boardId, currentUserId)
+                .orElseThrow(NotBoardMemberException::new);
+
+        if (!Set.of(BoardRole.OWNER, BoardRole.ADMIN).contains(currentBoardMember.getRole()))
+            throw new InsufficientRoleException();
+
+        return currentBoardMember;
+    }
+
     BoardMember requireContributor(UUID boardId, UUID currentUserId) {
         var currentBoardMember = boardMemberRepository.findByBoardIdAndUserId(boardId, currentUserId)
                 .orElseThrow(NotBoardMemberException::new);

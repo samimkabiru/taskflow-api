@@ -160,7 +160,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(NotCommentAuthorException.class)
     public ResponseEntity<ProblemDetail> handleNotCommentAuthor(NotCommentAuthorException ex) {
-        var problem = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.getMessage());
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(problem);
+        var problem = ProblemDetail.forStatusAndDetail(HttpStatus.FORBIDDEN, ex.getMessage());
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(problem);
     }
 }
