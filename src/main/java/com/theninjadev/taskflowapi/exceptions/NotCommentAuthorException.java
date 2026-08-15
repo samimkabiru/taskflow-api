@@ -1,0 +1,7 @@
+package com.theninjadev.taskflowapi.exceptions;
+
+public class NotCommentAuthorException extends RuntimeException {
+    public NotCommentAuthorException() {
+        super("You can only edit or delete your own comments.");
+    }
+}

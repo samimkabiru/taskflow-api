@@ -2,13 +2,17 @@ package com.theninjadev.taskflowapi.services;
 
 import com.theninjadev.taskflowapi.dtos.comment.CommentDto;
 import com.theninjadev.taskflowapi.dtos.comment.CreateCommentRequest;
+import com.theninjadev.taskflowapi.dtos.comment.UpdateCommentRequest;
 import com.theninjadev.taskflowapi.entities.Comment;
+import com.theninjadev.taskflowapi.exceptions.CommentNotFoundException;
+import com.theninjadev.taskflowapi.exceptions.NotCommentAuthorException;
 import com.theninjadev.taskflowapi.exceptions.TaskNotFoundException;
 import com.theninjadev.taskflowapi.exceptions.UserNotFoundException;
 import com.theninjadev.taskflowapi.mappers.CommentMapper;
 import com.theninjadev.taskflowapi.repositories.CommentRepository;
 import com.theninjadev.taskflowapi.repositories.TaskRepository;
 import com.theninjadev.taskflowapi.repositories.UserRepository;
+import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -49,5 +53,16 @@ public class CommentService {
                 .stream()
                 .map(commentMapper::toDto)
                 .toList();
+    }
+
+    public CommentDto updateComment(UUID commentId, UpdateCommentRequest request, UUID currentUserId) {
+        var comment = commentRepository.findById(commentId).orElseThrow(CommentNotFoundException::new);
+
+        if (!comment.getAuthor().getId().equals(currentUserId))
+            throw new NotCommentAuthorException();
+
+        comment.setContent(request.getContent());
+        commentRepository.save(comment);
+        return commentMapper.toDto(comment);
     }
 }

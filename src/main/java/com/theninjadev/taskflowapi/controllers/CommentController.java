@@ -2,6 +2,7 @@ package com.theninjadev.taskflowapi.controllers;
 
 import com.theninjadev.taskflowapi.dtos.comment.CommentDto;
 import com.theninjadev.taskflowapi.dtos.comment.CreateCommentRequest;
+import com.theninjadev.taskflowapi.dtos.comment.UpdateCommentRequest;
 import com.theninjadev.taskflowapi.services.CommentService;
 import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
@@ -35,6 +36,16 @@ public class CommentController {
         var currentUserId = getCurrentUserId();
 
         return ResponseEntity.ok(commentService.getCommentsForTask(taskId, currentUserId));
+    }
+
+    @PatchMapping("/comments/{id}")
+    public ResponseEntity<CommentDto> updateComment(
+            @PathVariable(value = "id") UUID commentId,
+            @Valid @RequestBody UpdateCommentRequest request
+    ) {
+        var currentUserId = getCurrentUserId();
+
+        return ResponseEntity.ok(commentService.updateComment(commentId, request, currentUserId));
     }
 
     private UUID getCurrentUserId() {
