@@ -17,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.unit.DataSize;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -59,5 +60,17 @@ public class AttachmentService {
         attachmentRepository.saveAndFlush(attachment);
         return attachmentMapper.toDto(attachment);
 
+    }
+
+    public List<AttachmentDto> getAttachmentsForTask(UUID taskId, UUID currentUserId) {
+        var task = taskRepository.findById(taskId).orElseThrow(TaskNotFoundException::new);
+        var boardId = task.getBoard().getId();
+        boardService.requireMembership(boardId, currentUserId);
+
+        return attachmentRepository
+                .findByTaskIdOrderByCreatedAtDesc(taskId)
+                .stream()
+                .map(attachmentMapper::toDto)
+                .toList();
     }
 }
