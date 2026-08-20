@@ -1,13 +1,17 @@
 package com.theninjadev.taskflowapi.controllers;
 
 import com.theninjadev.taskflowapi.dtos.attachment.AttachmentDto;
+import com.theninjadev.taskflowapi.dtos.attachment.DownloadAttachmentResult;
 import com.theninjadev.taskflowapi.services.AttachmentService;
 import lombok.AllArgsConstructor;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import javax.print.attribute.standard.Media;
 import java.util.List;
 import java.util.UUID;
 
@@ -33,6 +37,20 @@ public class AttachmentController {
         var currentUserId = getCurrentUserId();
 
         return ResponseEntity.ok(attachmentService.getAttachmentsForTask(taskId, currentUserId));
+    }
+
+    @GetMapping("/attachments/{id}/download")
+    public ResponseEntity<byte[]> downloadAttachment(
+            @PathVariable(value = "id") UUID attachmentId
+    ) {
+        var currentUserId = getCurrentUserId();
+
+        var downloadResult = attachmentService.downloadAttachment(attachmentId, currentUserId);
+
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType(downloadResult.contentType()))
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + downloadResult.fileName() + "\"")
+                .body(downloadResult.fileBytes());
     }
 
     private UUID getCurrentUserId() {

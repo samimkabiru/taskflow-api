@@ -36,4 +36,14 @@ public class FileStorageService {
             throw new FileStorageException("Failed to store file", e);
         }
     }
+
+    public byte[] load(String storageKey) {
+        var destination = Path.of(uploadDir).resolve(storageKey);
+
+        try {
+            return Files.readAllBytes(destination);
+        } catch (IOException e) {
+            throw new FileStorageException("Failed to load file", e);
+        }
+    }
 }

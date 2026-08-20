@@ -1,11 +1,9 @@
 package com.theninjadev.taskflowapi.services;
 
 import com.theninjadev.taskflowapi.dtos.attachment.AttachmentDto;
+import com.theninjadev.taskflowapi.dtos.attachment.DownloadAttachmentResult;
 import com.theninjadev.taskflowapi.entities.Attachment;
-import com.theninjadev.taskflowapi.exceptions.EmptyFileException;
-import com.theninjadev.taskflowapi.exceptions.FileTooLargeException;
-import com.theninjadev.taskflowapi.exceptions.TaskNotFoundException;
-import com.theninjadev.taskflowapi.exceptions.UserNotFoundException;
+import com.theninjadev.taskflowapi.exceptions.*;
 import com.theninjadev.taskflowapi.mappers.AttachmentMapper;
 import com.theninjadev.taskflowapi.repositories.AttachmentRepository;
 import com.theninjadev.taskflowapi.repositories.TaskRepository;
@@ -72,5 +70,15 @@ public class AttachmentService {
                 .stream()
                 .map(attachmentMapper::toDto)
                 .toList();
+    }
+
+    public DownloadAttachmentResult downloadAttachment(UUID attachmentId, UUID currentUserId) {
+        var attachment = attachmentRepository.findById(attachmentId).orElseThrow(AttachmentNotFoundException::new);
+        var boardId = attachment.getTask().getBoard().getId();
+        boardService.requireMembership(boardId, currentUserId);
+
+        var fileBytes = fileStorageService.load(attachment.getStorageKey());
+
+        return new DownloadAttachmentResult(fileBytes, attachment.getContentType(), attachment.getFileName());
     }
 }
