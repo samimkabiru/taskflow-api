@@ -81,4 +81,13 @@ public class AttachmentService {
 
         return new DownloadAttachmentResult(fileBytes, attachment.getContentType(), attachment.getFileName());
     }
+
+    public void deleteAttachment(UUID attachmentId, UUID currentUserId) {
+        var attachment = attachmentRepository.findById(attachmentId).orElseThrow(AttachmentNotFoundException::new);
+        var boardId = attachment.getTask().getBoard().getId();
+        boardService.requireContributor(boardId, currentUserId);
+
+        attachmentRepository.delete(attachment);
+        fileStorageService.delete(attachment.getStorageKey());
+    }
 }

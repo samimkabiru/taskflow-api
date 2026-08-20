@@ -46,4 +46,13 @@ public class FileStorageService {
             throw new FileStorageException("Failed to load file", e);
         }
     }
+
+    public void delete(String storageKey) {
+        var destination = Path.of(uploadDir).resolve(storageKey);
+        try {
+            Files.deleteIfExists(destination);
+        } catch (IOException e) {
+            throw new FileStorageException("Failed to delete file", e);
+        }
+    }
 }
