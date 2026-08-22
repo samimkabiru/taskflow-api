@@ -6,6 +6,7 @@ import com.theninjadev.taskflowapi.dtos.board.InviteMemberRequest;
 import com.theninjadev.taskflowapi.dtos.board.UpdateMemberRoleRequest;
 import com.theninjadev.taskflowapi.entities.BoardInvite;
 import com.theninjadev.taskflowapi.entities.BoardMember;
+import com.theninjadev.taskflowapi.enums.ActionType;
 import com.theninjadev.taskflowapi.enums.BoardInviteRole;
 import com.theninjadev.taskflowapi.enums.BoardRole;
 import com.theninjadev.taskflowapi.enums.InviteStatus;
@@ -20,6 +21,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
@@ -31,6 +33,7 @@ public class BoardMembershipService {
     private final BoardInviteRepository boardInviteRepository;
     private final UserRepository userRepository;
     private final BoardService boardService;
+    private final ActivityLogService activityLogService;
 
     public List<BoardMemberDto> getBoardMembers(UUID boardId, UUID currentUserId) {
         boardService.getBoardOrThrow(boardId);
@@ -103,6 +106,7 @@ public class BoardMembershipService {
             throw new AlreadyBoardMemberException();
         }
 
+        activityLogService.log(ActionType.MEMBER_ADDED, invite.getBoard(), null, currentUser, Map.of("role", invite.getRole().name()));
         return boardMapper.toDto(boardMember);
     }
 
@@ -133,11 +137,14 @@ public class BoardMembershipService {
     }
 
     public void removeMember(UUID boardId, UUID targetUserId, UUID currentUserId) {
+        var board = boardService.getBoardOrThrow(boardId);
+        var currentUser = userRepository.findById(currentUserId).orElseThrow(UserNotFoundException::new);
         requireOwnerOrAdmin(boardId, currentUserId);
 
         var targetBoardMember = guardTargetNotOwner(boardId, targetUserId);
 
         boardMemberRepository.delete(targetBoardMember);
+        activityLogService.log(ActionType.MEMBER_REMOVED, board, null, currentUser, Map.of());
 
     }
 

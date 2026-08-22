@@ -5,6 +5,7 @@ import com.theninjadev.taskflowapi.dtos.board.CreateBoardRequest;
 import com.theninjadev.taskflowapi.dtos.board.UpdateBoardRequest;
 import com.theninjadev.taskflowapi.entities.Board;
 import com.theninjadev.taskflowapi.entities.BoardMember;
+import com.theninjadev.taskflowapi.enums.ActionType;
 import com.theninjadev.taskflowapi.enums.BoardRole;
 import com.theninjadev.taskflowapi.exceptions.BoardNotFoundException;
 import com.theninjadev.taskflowapi.exceptions.InsufficientRoleException;
@@ -20,6 +21,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
@@ -30,6 +32,7 @@ public class BoardService {
     private final BoardMapper boardMapper;
     private final UserRepository userRepository;
     private final BoardMemberRepository boardMemberRepository;
+    private final ActivityLogService activityLogService;
 
     @Transactional
     public BoardDto createBoard(CreateBoardRequest request, UUID currentUserId) {
@@ -50,6 +53,7 @@ public class BoardService {
 
         boardMemberRepository.save(ownerMembership);
 
+        activityLogService.log(ActionType.BOARD_CREATED, board, null, owner, Map.of());
         return boardMapper.toDto(board);
     }
 

@@ -6,6 +6,7 @@ import com.theninjadev.taskflowapi.dtos.task.TaskDto;
 import com.theninjadev.taskflowapi.dtos.task.UpdateTaskRequest;
 import com.theninjadev.taskflowapi.entities.Task;
 import com.theninjadev.taskflowapi.entities.User;
+import com.theninjadev.taskflowapi.enums.ActionType;
 import com.theninjadev.taskflowapi.enums.TaskPriority;
 import com.theninjadev.taskflowapi.exceptions.*;
 import com.theninjadev.taskflowapi.mappers.TaskMapper;
@@ -20,6 +21,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @Service
@@ -33,6 +35,7 @@ public class TaskService {
     private final TaskMapper taskMapper;
     private final BoardService boardService;
     private final TaskListRepository taskListRepository;
+    private final ActivityLogService activityLogService;
 
     @Transactional
     public TaskDto createTask(UUID taskListId, CreateTaskRequest request, UUID currentUserId) {
@@ -62,6 +65,7 @@ public class TaskService {
         if (request.getPriority() != null) task.setPriority(priority);
 
         taskRepository.saveAndFlush(task);
+        activityLogService.log(ActionType.TASK_CREATED, board, task, currentUser, Map.of("title", task.getTitle()));
         return taskMapper.toDto(task);
     }
 
@@ -117,19 +121,26 @@ public class TaskService {
 
     public TaskDto moveTask(UUID taskId, MoveTaskRequest request, UUID currentUserId) {
         var task = taskRepository.findById(taskId).orElseThrow(TaskNotFoundException::new);
+        var oldList = task.getTaskList();
+        var currentUser = userRepository.findById(currentUserId).orElseThrow(UserNotFoundException::new);
         boardService.requireContributor(task.getBoard().getId(), currentUserId);
 
-        var taskList = taskListRepository.findById(request.getTaskListId())
+        var newList = taskListRepository.findById(request.getTaskListId())
                 .orElseThrow(TaskListNotFoundException::new);
 
-        if (!taskList.getBoard().getId().equals(task.getBoard().getId()))
+        if (!newList.getBoard().getId().equals(task.getBoard().getId()))
             throw new TaskListNotOnBoardException();
 
-        // TODO: activity log
-        task.setTaskList(taskList);
+        if (task.getTaskList().getId().equals(request.getTaskListId())
+                && task.getPosition().equals(request.getPosition())) {
+            return taskMapper.toDto(task);
+        }
+
+        task.setTaskList(newList);
         task.setPosition(request.getPosition());
 
         taskRepository.save(task);
+        activityLogService.log(ActionType.TASK_MOVED, task.getBoard(), task, currentUser, Map.of("from_list", oldList.getTitle(), "to_list", newList.getTitle()));
         return taskMapper.toDto(task);
     }
 

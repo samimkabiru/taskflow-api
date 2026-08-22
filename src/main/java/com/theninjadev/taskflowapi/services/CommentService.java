@@ -4,6 +4,7 @@ import com.theninjadev.taskflowapi.dtos.comment.CommentDto;
 import com.theninjadev.taskflowapi.dtos.comment.CreateCommentRequest;
 import com.theninjadev.taskflowapi.dtos.comment.UpdateCommentRequest;
 import com.theninjadev.taskflowapi.entities.Comment;
+import com.theninjadev.taskflowapi.enums.ActionType;
 import com.theninjadev.taskflowapi.exceptions.CommentNotFoundException;
 import com.theninjadev.taskflowapi.exceptions.NotCommentAuthorException;
 import com.theninjadev.taskflowapi.exceptions.TaskNotFoundException;
@@ -17,6 +18,7 @@ import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @Service
@@ -27,6 +29,7 @@ public class CommentService {
     private final UserRepository userRepository;
     private final CommentRepository commentRepository;
     private final CommentMapper commentMapper;
+    private final ActivityLogService activityLogService;
 
     public CommentDto createComment(UUID taskId, CreateCommentRequest request, UUID currentUserId) {
         var task = taskRepository.findById(taskId).orElseThrow(TaskNotFoundException::new);
@@ -40,6 +43,7 @@ public class CommentService {
         comment.setAuthor(author);
 
         commentRepository.save(comment);
+        activityLogService.log(ActionType.COMMENT_ADDED, task.getBoard(), task, author, Map.of("task_title", task.getTitle()));
         return commentMapper.toDto(comment);
     }
 
