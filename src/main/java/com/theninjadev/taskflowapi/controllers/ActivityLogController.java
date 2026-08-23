@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -25,6 +26,13 @@ public class ActivityLogController {
             Pageable pageable
     ) {
         return ResponseEntity.ok(activityLogService.listForBoard(boardId, getCurrentUserId(), pageable));
+    }
+
+    @GetMapping("/tasks/{id}/activity")
+    public ResponseEntity<List<ActivityLogDto>> listForTask(
+            @PathVariable(value = "id") UUID taskId
+    ) {
+        return ResponseEntity.ok(activityLogService.listForTask(taskId, getCurrentUserId()));
     }
 
     private UUID getCurrentUserId() {

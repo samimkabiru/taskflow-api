@@ -8,15 +8,18 @@ import com.theninjadev.taskflowapi.entities.User;
 import com.theninjadev.taskflowapi.enums.ActionType;
 import com.theninjadev.taskflowapi.exceptions.BoardNotFoundException;
 import com.theninjadev.taskflowapi.exceptions.NotBoardMemberException;
+import com.theninjadev.taskflowapi.exceptions.TaskNotFoundException;
 import com.theninjadev.taskflowapi.mappers.ActivityLogMapper;
 import com.theninjadev.taskflowapi.repositories.ActivityLogRepository;
 import com.theninjadev.taskflowapi.repositories.BoardMemberRepository;
 import com.theninjadev.taskflowapi.repositories.BoardRepository;
+import com.theninjadev.taskflowapi.repositories.TaskRepository;
 import lombok.AllArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -28,6 +31,7 @@ public class ActivityLogService {
     private final ActivityLogMapper activityLogMapper;
     private final BoardRepository boardRepository;
     private final BoardMemberRepository boardMemberRepository;
+    private final TaskRepository taskRepository;
 
     public void log(ActionType actionType, Board board, Task task, User actor, Map<String, Object> metadata) {
         var activityLog = new ActivityLog();
@@ -50,5 +54,22 @@ public class ActivityLogService {
         return activityLogRepository
                 .findByBoardIdOrderByCreatedAtDesc(boardId, pageable)
                 .map(activityLogMapper::toDto);
+    }
+
+    public List<ActivityLogDto> listForTask(UUID taskId, UUID currentUserId) {
+        var task = taskRepository.findById(taskId).orElseThrow(TaskNotFoundException::new);
+        var boardId = task.getBoard().getId();
+
+        if (!boardRepository.existsById(boardId))
+            throw new BoardNotFoundException();
+
+        if (!boardMemberRepository.existsByBoardIdAndUserId(boardId, currentUserId))
+            throw new NotBoardMemberException();
+
+        return activityLogRepository
+                .findByTaskIdOrderByCreatedAtDesc(taskId)
+                .stream()
+                .map(activityLogMapper::toDto)
+                .toList();
     }
 }
