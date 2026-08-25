@@ -47,10 +47,11 @@ public class BoardMembershipService {
         return boardMembers.stream().map(boardMapper::toDto).toList();
     }
 
+    @Transactional
     public BoardInviteDto inviteMember(UUID boardId, InviteMemberRequest request, UUID currentUserId) {
         var email = request.getEmail().trim().toLowerCase();
         var board = boardService.getBoardOrThrow(boardId);
-
+        var currentUser = userRepository.findById(currentUserId).orElseThrow(UserNotFoundException::new);
         var currentBoardMember = requireOwnerOrAdmin(boardId, currentUserId);
 
         var invitedUser = userRepository.findByEmail(email).orElse(null);
@@ -79,6 +80,8 @@ public class BoardMembershipService {
             throw new InviteAlreadyPendingException();
         }
 
+        if (invitedUser != null)
+            activityLogService.log(ActionType.MEMBER_INVITED, board, null, currentUser, Map.of("invited_name", invitedUser.getFullName(), "role", role.name()));
         return boardMapper.toDto(boardInvite);
     }
 
@@ -110,12 +113,14 @@ public class BoardMembershipService {
         return boardMapper.toDto(boardMember);
     }
 
+    @Transactional
     public BoardMemberDto updateMemberRole(
             UUID boardId,
             UUID targetUserId,
             UpdateMemberRoleRequest request,
             UUID currentUserId) {
-
+        var board = boardService.getBoardOrThrow(boardId);
+        var currentUser = userRepository.findById(currentUserId).orElseThrow(UserNotFoundException::new);
         requireOwnerOrAdmin(boardId, currentUserId);
 
         var targetBoardMember = guardTargetNotOwner(boardId, targetUserId);
@@ -132,10 +137,12 @@ public class BoardMembershipService {
 
         targetBoardMember.setRole(role);
 
+        activityLogService.log(ActionType.MEMBER_ROLE_CHANGED, board, null, currentUser, Map.of("member_name", targetBoardMember.getUser().getFullName(), "new_role", role.name()));
         boardMemberRepository.save(targetBoardMember);
         return boardMapper.toDto(targetBoardMember);
     }
 
+    @Transactional
     public void removeMember(UUID boardId, UUID targetUserId, UUID currentUserId) {
         var board = boardService.getBoardOrThrow(boardId);
         var currentUser = userRepository.findById(currentUserId).orElseThrow(UserNotFoundException::new);
@@ -143,8 +150,8 @@ public class BoardMembershipService {
 
         var targetBoardMember = guardTargetNotOwner(boardId, targetUserId);
 
+        activityLogService.log(ActionType.MEMBER_REMOVED, board, null, currentUser, Map.of("removed_name", targetBoardMember.getUser().getFullName()));
         boardMemberRepository.delete(targetBoardMember);
-        activityLogService.log(ActionType.MEMBER_REMOVED, board, null, currentUser, Map.of());
 
     }
 

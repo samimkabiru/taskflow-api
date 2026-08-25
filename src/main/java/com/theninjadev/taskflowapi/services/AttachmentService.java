@@ -3,6 +3,7 @@ package com.theninjadev.taskflowapi.services;
 import com.theninjadev.taskflowapi.dtos.attachment.AttachmentDto;
 import com.theninjadev.taskflowapi.dtos.attachment.DownloadAttachmentResult;
 import com.theninjadev.taskflowapi.entities.Attachment;
+import com.theninjadev.taskflowapi.enums.ActionType;
 import com.theninjadev.taskflowapi.exceptions.*;
 import com.theninjadev.taskflowapi.mappers.AttachmentMapper;
 import com.theninjadev.taskflowapi.repositories.AttachmentRepository;
@@ -16,6 +17,7 @@ import org.springframework.util.unit.DataSize;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @Service
@@ -27,6 +29,7 @@ public class AttachmentService {
     private final UserRepository userRepository;
     private final AttachmentMapper attachmentMapper;
     private final AttachmentRepository attachmentRepository;
+    private final ActivityLogService activityLogService;
 
     @Value("${spring.servlet.multipart.max-file-size}")
     private DataSize maxFileSize;
@@ -56,6 +59,7 @@ public class AttachmentService {
         attachment.setTask(task);
 
         attachmentRepository.saveAndFlush(attachment);
+        activityLogService.log(ActionType.ATTACHMENT_ADDED, task.getBoard(), task, currentUser, Map.of("short_code", task.getShortCode(), "attachment_name", file.getOriginalFilename() != null ?  file.getOriginalFilename() : "file"));
         return attachmentMapper.toDto(attachment);
 
     }
@@ -82,11 +86,14 @@ public class AttachmentService {
         return new DownloadAttachmentResult(fileBytes, attachment.getContentType(), attachment.getFileName());
     }
 
+    @Transactional
     public void deleteAttachment(UUID attachmentId, UUID currentUserId) {
         var attachment = attachmentRepository.findById(attachmentId).orElseThrow(AttachmentNotFoundException::new);
+        var currentUser = userRepository.findById(currentUserId).orElseThrow(UserNotFoundException::new);
         var boardId = attachment.getTask().getBoard().getId();
         boardService.requireContributor(boardId, currentUserId);
 
+        activityLogService.log(ActionType.ATTACHMENT_REMOVED, attachment.getTask().getBoard(), attachment.getTask(), currentUser, Map.of("short_code", attachment.getTask().getShortCode(), "attachment_name", attachment.getFileName()));
         attachmentRepository.delete(attachment);
         fileStorageService.delete(attachment.getStorageKey());
     }

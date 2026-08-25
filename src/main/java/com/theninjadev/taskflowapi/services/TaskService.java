@@ -65,7 +65,7 @@ public class TaskService {
         if (request.getPriority() != null) task.setPriority(priority);
 
         taskRepository.saveAndFlush(task);
-        activityLogService.log(ActionType.TASK_CREATED, board, task, currentUser, Map.of("title", task.getTitle()));
+        activityLogService.log(ActionType.TASK_CREATED, board, task, currentUser, Map.of("short_code", task.getShortCode()));
         return taskMapper.toDto(task);
     }
 
@@ -94,8 +94,11 @@ public class TaskService {
                 .toList();
     }
 
+    @Transactional
     public TaskDto updateTask(UUID taskId, UpdateTaskRequest request, UUID currentUserId) {
         var task = taskRepository.findById(taskId).orElseThrow(TaskNotFoundException::new);
+        var currentUser = userRepository.findById(currentUserId).orElseThrow(UserNotFoundException::new);
+        var oldPriority = task.getPriority();
         boardService.requireContributor(task.getBoard().getId(), currentUserId);
 
         var priority = parsePriority(request.getPriority());
@@ -108,17 +111,32 @@ public class TaskService {
         if (request.getDueDate() != null) task.setDueDate(request.getDueDate());
 
         taskRepository.save(task);
+
+        if (request.getTitle() != null || request.getDescription() != null || request.getDueDate() != null)
+            activityLogService.log(ActionType.TASK_UPDATED, task.getBoard(), task, currentUser, Map.of("short_code", task.getShortCode()));
+
+        if (request.getPriority() != null)
+            activityLogService.log(ActionType.PRIORITY_CHANGED, task.getBoard(), task, currentUser, Map.of("short_code", task.getShortCode(), "from", oldPriority != null ? oldPriority.name() : "none", "to", priority.name()));
+
+        if (request.getAssigneeId() != null)
+            activityLogService.log(ActionType.ASSIGNEE_CHANGED, task.getBoard(), task, currentUser, Map.of("short_code", task.getShortCode(), "assignee_name", assignee.getFullName()));
+
         return taskMapper.toDto(task);
     }
 
 
+    @Transactional
     public void deleteTask(UUID taskId, UUID currentUserId) {
         var task = taskRepository.findById(taskId).orElseThrow(TaskNotFoundException::new);
+        var currentUser = userRepository.findById(currentUserId).orElseThrow(UserNotFoundException::new);
 
         boardService.requireContributor(task.getBoard().getId(), currentUserId);
+
+        activityLogService.log(ActionType.TASK_DELETED, task.getBoard(), task, currentUser, Map.of("short_code", task.getShortCode(), "title", task.getTitle()));
         taskRepository.delete(task);
     }
 
+    @Transactional
     public TaskDto moveTask(UUID taskId, MoveTaskRequest request, UUID currentUserId) {
         var task = taskRepository.findById(taskId).orElseThrow(TaskNotFoundException::new);
         var oldList = task.getTaskList();
@@ -140,7 +158,7 @@ public class TaskService {
         task.setPosition(request.getPosition());
 
         taskRepository.save(task);
-        activityLogService.log(ActionType.TASK_MOVED, task.getBoard(), task, currentUser, Map.of("from_list", oldList.getTitle(), "to_list", newList.getTitle()));
+        activityLogService.log(ActionType.TASK_MOVED, task.getBoard(), task, currentUser, Map.of("short_code", task.getShortCode(), "from_list", oldList.getTitle(), "to_list", newList.getTitle()));
         return taskMapper.toDto(task);
     }
 

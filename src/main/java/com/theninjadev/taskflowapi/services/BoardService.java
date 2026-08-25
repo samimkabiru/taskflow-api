@@ -53,7 +53,7 @@ public class BoardService {
 
         boardMemberRepository.save(ownerMembership);
 
-        activityLogService.log(ActionType.BOARD_CREATED, board, null, owner, Map.of());
+        activityLogService.log(ActionType.BOARD_CREATED, board, null, owner, Map.of("board_name", board.getName()));
         return boardMapper.toDto(board);
     }
 

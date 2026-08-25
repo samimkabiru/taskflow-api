@@ -13,9 +13,9 @@ import com.theninjadev.taskflowapi.mappers.CommentMapper;
 import com.theninjadev.taskflowapi.repositories.CommentRepository;
 import com.theninjadev.taskflowapi.repositories.TaskRepository;
 import com.theninjadev.taskflowapi.repositories.UserRepository;
-import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Map;
@@ -31,6 +31,7 @@ public class CommentService {
     private final CommentMapper commentMapper;
     private final ActivityLogService activityLogService;
 
+    @Transactional
     public CommentDto createComment(UUID taskId, CreateCommentRequest request, UUID currentUserId) {
         var task = taskRepository.findById(taskId).orElseThrow(TaskNotFoundException::new);
         var boardId = task.getBoard().getId();
@@ -43,7 +44,10 @@ public class CommentService {
         comment.setAuthor(author);
 
         commentRepository.save(comment);
-        activityLogService.log(ActionType.COMMENT_ADDED, task.getBoard(), task, author, Map.of("task_title", task.getTitle()));
+        var snippet = comment.getContent().length() > 100
+                ? comment.getContent().substring(0, 100) + "..."
+                : comment.getContent();
+        activityLogService.log(ActionType.COMMENT_ADDED, task.getBoard(), task, author, Map.of("short_code", task.getShortCode(), "comment_snippet", snippet));
         return commentMapper.toDto(comment);
     }
 
