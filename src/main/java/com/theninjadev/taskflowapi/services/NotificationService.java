@@ -12,6 +12,7 @@ import lombok.AllArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Map;
 import java.util.UUID;
@@ -47,5 +48,10 @@ public class NotificationService {
 
         notification.setIsRead(true);
         notificationRepository.save(notification);
+    }
+
+    @Transactional
+    public void markAllAsRead(UUID currentUserId) {
+        notificationRepository.markAllAsReadForRecipient(currentUserId);
     }
 }
