@@ -44,6 +44,13 @@ public class NotificationController {
         return ResponseEntity.ok(notificationService.getUnreadCount(getCurrentUserId()));
     }
 
+    @DeleteMapping("/clear-all")
+    public ResponseEntity<Void> clearAll() {
+        notificationService.clearAll(getCurrentUserId());
+
+        return ResponseEntity.noContent().build();
+    }
+
     private UUID getCurrentUserId() {
         return (UUID) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
     }

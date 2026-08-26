@@ -58,4 +58,9 @@ public class NotificationService {
     public Long getUnreadCount(UUID currentUserId) {
         return notificationRepository.countByRecipientIdAndIsReadFalse(currentUserId);
     }
+
+    @Transactional
+    public void clearAll(UUID currentUserId) {
+        notificationRepository.deleteByRecipientId(currentUserId);
+    }
 }
