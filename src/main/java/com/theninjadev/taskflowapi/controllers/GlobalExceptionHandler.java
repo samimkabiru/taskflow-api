@@ -194,4 +194,16 @@ public class GlobalExceptionHandler {
         var problem = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.getMessage());
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(problem);
     }
+
+    @ExceptionHandler(NotificationNotFoundException.class)
+    public ResponseEntity<ProblemDetail> handleNotificationNotFound(NotificationNotFoundException ex) {
+        var problem = ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, ex.getMessage());
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(problem);
+    }
+
+    @ExceptionHandler(NotYourNotificationException.class)
+    public ResponseEntity<ProblemDetail> handleNotYourNotification(NotYourNotificationException ex) {
+        var problem = ProblemDetail.forStatusAndDetail(HttpStatus.FORBIDDEN, ex.getMessage());
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(problem);
+    }
 }

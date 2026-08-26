@@ -4,6 +4,8 @@ import com.theninjadev.taskflowapi.dtos.notification.NotificationDto;
 import com.theninjadev.taskflowapi.entities.Notification;
 import com.theninjadev.taskflowapi.entities.User;
 import com.theninjadev.taskflowapi.enums.NotificationType;
+import com.theninjadev.taskflowapi.exceptions.NotYourNotificationException;
+import com.theninjadev.taskflowapi.exceptions.NotificationNotFoundException;
 import com.theninjadev.taskflowapi.mappers.NotificationMapper;
 import com.theninjadev.taskflowapi.repositories.NotificationRepository;
 import lombok.AllArgsConstructor;
@@ -35,5 +37,15 @@ public class NotificationService {
         return notificationRepository
                 .findByRecipientIdOrderByCreatedAtDesc(currentUserId, pageable)
                 .map(notificationMapper::toDto);
+    }
+
+    public void markAsRead(UUID notificationId, UUID currentUserId) {
+        var notification = notificationRepository.findById(notificationId).orElseThrow(NotificationNotFoundException::new);
+
+        if (!notification.getRecipient().getId().equals(currentUserId))
+            throw new NotYourNotificationException();
+
+        notification.setIsRead(true);
+        notificationRepository.save(notification);
     }
 }

@@ -7,9 +7,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.UUID;
 
@@ -24,6 +22,14 @@ public class NotificationController {
     public ResponseEntity<Page<NotificationDto>> listForUser(Pageable pageable) {
 
         return ResponseEntity.ok(notificationService.listForUser(getCurrentUserId(), pageable));
+    }
+
+    @PatchMapping("/{id}/read")
+    public ResponseEntity<Void> markAsRead(@PathVariable(value = "id") UUID notificationId) {
+
+        notificationService.markAsRead(notificationId, getCurrentUserId());
+
+        return ResponseEntity.noContent().build();
     }
 
     private UUID getCurrentUserId() {
