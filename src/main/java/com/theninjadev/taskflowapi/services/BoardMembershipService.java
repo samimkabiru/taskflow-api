@@ -114,6 +114,25 @@ public class BoardMembershipService {
     }
 
     @Transactional
+    public void declineInvite(UUID inviteId, UUID currentUserId) {
+        var invite = boardInviteRepository.findById(inviteId).orElseThrow(InviteNotFoundException::new);
+        var currentUser = userRepository.findById(currentUserId).orElseThrow(UserNotFoundException::new);
+
+        if (!currentUser.getEmail().equalsIgnoreCase(invite.getEmail()))
+            throw new InviteEmailMismatchException();
+
+        markInviteRevoked(invite);
+    }
+
+    @Transactional
+    public void revokeInvite(UUID inviteId, UUID currentUserId) {
+        var invite = boardInviteRepository.findById(inviteId).orElseThrow(InviteNotFoundException::new);
+        boardService.requireOwnerOrAdmin(invite.getBoard().getId(), currentUserId);
+
+        markInviteRevoked(invite);
+    }
+
+    @Transactional
     public BoardMemberDto updateMemberRole(
             UUID boardId,
             UUID targetUserId,
@@ -161,6 +180,11 @@ public class BoardMembershipService {
         var targetBoardMember = guardTargetNotOwner(boardId, currentUserId);
 
         boardMemberRepository.delete(targetBoardMember);
+    }
+
+    private void markInviteRevoked(BoardInvite invite) {
+        invite.setStatus(InviteStatus.REVOKED);
+        boardInviteRepository.save(invite);
     }
 
     private BoardMember requireOwnerOrAdmin(UUID boardId, UUID currentUserId) {

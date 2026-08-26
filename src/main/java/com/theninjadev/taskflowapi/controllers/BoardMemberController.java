@@ -56,6 +56,20 @@ public class BoardMemberController {
         return ResponseEntity.ok(boardMemberDto);
     }
 
+    @PostMapping("/invites/{id}/decline")
+    public ResponseEntity<Void> declineInvite(@PathVariable(value = "id") UUID inviteId) {
+        boardMembershipService.declineInvite(inviteId, getCurrentUserId());
+
+        return ResponseEntity.noContent().build();
+    }
+
+    @DeleteMapping("/invites/{id}")
+    public ResponseEntity<Void> revokeInvite(@PathVariable(value = "id") UUID inviteId) {
+        boardMembershipService.revokeInvite(inviteId, getCurrentUserId());
+
+        return ResponseEntity.noContent().build();
+    }
+
     @PatchMapping("/{boardId}/members/{userId}")
     public ResponseEntity<BoardMemberDto> updateMemberRole(
             @PathVariable UUID boardId,
