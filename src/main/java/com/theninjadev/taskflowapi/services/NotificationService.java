@@ -54,4 +54,8 @@ public class NotificationService {
     public void markAllAsRead(UUID currentUserId) {
         notificationRepository.markAllAsReadForRecipient(currentUserId);
     }
+
+    public Long getUnreadCount(UUID currentUserId) {
+        return notificationRepository.countByRecipientIdAndIsReadFalse(currentUserId);
+    }
 }

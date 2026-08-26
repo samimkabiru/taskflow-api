@@ -39,6 +39,11 @@ public class NotificationController {
         return ResponseEntity.noContent().build();
     }
 
+    @GetMapping("/unread-count")
+    public ResponseEntity<Long> getUnreadCount() {
+        return ResponseEntity.ok(notificationService.getUnreadCount(getCurrentUserId()));
+    }
+
     private UUID getCurrentUserId() {
         return (UUID) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
     }
