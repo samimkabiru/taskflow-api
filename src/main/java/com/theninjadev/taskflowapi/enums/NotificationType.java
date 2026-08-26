@@ -1,9 +1,9 @@
 package com.theninjadev.taskflowapi.enums;
 
 public enum NotificationType {
-    TASK_ASSIGNED,
-    MENTIONED,
+    ASSIGNMENT,
     DUE_SOON,
-    BOARD_INVITE,
-    BOARD_MEMBER_REMOVED
+    COMMENT,
+    STATUS_CHANGE,
+    INVITE
 }
