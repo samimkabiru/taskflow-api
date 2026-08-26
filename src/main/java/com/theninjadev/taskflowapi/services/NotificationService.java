@@ -1,18 +1,24 @@
 package com.theninjadev.taskflowapi.services;
 
+import com.theninjadev.taskflowapi.dtos.notification.NotificationDto;
 import com.theninjadev.taskflowapi.entities.Notification;
 import com.theninjadev.taskflowapi.entities.User;
 import com.theninjadev.taskflowapi.enums.NotificationType;
+import com.theninjadev.taskflowapi.mappers.NotificationMapper;
 import com.theninjadev.taskflowapi.repositories.NotificationRepository;
 import lombok.AllArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.util.Map;
+import java.util.UUID;
 
 @Service
 @AllArgsConstructor
 public class NotificationService {
     private final NotificationRepository notificationRepository;
+    private final NotificationMapper notificationMapper;
 
     public void notify(NotificationType type, User recipient, Map<String, Object> payload) {
         var notification = new Notification();
@@ -23,5 +29,11 @@ public class NotificationService {
         notification.setIsRead(false);
 
         notificationRepository.save(notification);
+    }
+
+    public Page<NotificationDto> listForUser(UUID currentUserId, Pageable pageable) {
+        return notificationRepository
+                .findByRecipientIdOrderByCreatedAtDesc(currentUserId, pageable)
+                .map(notificationMapper::toDto);
     }
 }
