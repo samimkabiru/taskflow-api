@@ -7,6 +7,7 @@ import com.theninjadev.taskflowapi.dtos.task.UpdateTaskRequest;
 import com.theninjadev.taskflowapi.entities.Task;
 import com.theninjadev.taskflowapi.entities.User;
 import com.theninjadev.taskflowapi.enums.ActionType;
+import com.theninjadev.taskflowapi.enums.NotificationType;
 import com.theninjadev.taskflowapi.enums.TaskPriority;
 import com.theninjadev.taskflowapi.exceptions.*;
 import com.theninjadev.taskflowapi.mappers.TaskMapper;
@@ -36,6 +37,7 @@ public class TaskService {
     private final BoardService boardService;
     private final TaskListRepository taskListRepository;
     private final ActivityLogService activityLogService;
+    private final NotificationService notificationService;
 
     @Transactional
     public TaskDto createTask(UUID taskListId, CreateTaskRequest request, UUID currentUserId) {
@@ -66,6 +68,11 @@ public class TaskService {
 
         taskRepository.saveAndFlush(task);
         activityLogService.log(ActionType.TASK_CREATED, board, task, currentUser, Map.of("short_code", task.getShortCode()));
+
+        if (request.getAssigneeId() != null) {
+            notificationService.notify(NotificationType.ASSIGNMENT, assignee, Map.of("assigner_name", currentUser.getFullName(), "task_title", task.getTitle(), "short_code", task.getShortCode()));
+        }
+
         return taskMapper.toDto(task);
     }
 
@@ -118,8 +125,10 @@ public class TaskService {
         if (request.getPriority() != null)
             activityLogService.log(ActionType.PRIORITY_CHANGED, task.getBoard(), task, currentUser, Map.of("short_code", task.getShortCode(), "from", oldPriority != null ? oldPriority.name() : "none", "to", priority.name()));
 
-        if (request.getAssigneeId() != null)
+        if (request.getAssigneeId() != null) {
             activityLogService.log(ActionType.ASSIGNEE_CHANGED, task.getBoard(), task, currentUser, Map.of("short_code", task.getShortCode(), "assignee_name", assignee.getFullName()));
+            notificationService.notify(NotificationType.ASSIGNMENT, assignee, Map.of("assigner_name", currentUser.getFullName(), "task_title", task.getTitle(), "short_code", task.getShortCode()));
+        }
 
         return taskMapper.toDto(task);
     }
@@ -159,6 +168,10 @@ public class TaskService {
 
         taskRepository.save(task);
         activityLogService.log(ActionType.TASK_MOVED, task.getBoard(), task, currentUser, Map.of("short_code", task.getShortCode(), "from_list", oldList.getTitle(), "to_list", newList.getTitle()));
+
+        if (task.getAssignee() != null && task.getAssignee().getId() != currentUserId)
+            notificationService.notify(NotificationType.STATUS_CHANGE, task.getAssignee(), Map.of("mover_name", currentUser.getFullName(), "task_title", task.getTitle(), "to_list", newList.getTitle()));
+
         return taskMapper.toDto(task);
     }
 

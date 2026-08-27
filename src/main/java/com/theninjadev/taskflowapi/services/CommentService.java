@@ -5,6 +5,7 @@ import com.theninjadev.taskflowapi.dtos.comment.CreateCommentRequest;
 import com.theninjadev.taskflowapi.dtos.comment.UpdateCommentRequest;
 import com.theninjadev.taskflowapi.entities.Comment;
 import com.theninjadev.taskflowapi.enums.ActionType;
+import com.theninjadev.taskflowapi.enums.NotificationType;
 import com.theninjadev.taskflowapi.exceptions.CommentNotFoundException;
 import com.theninjadev.taskflowapi.exceptions.NotCommentAuthorException;
 import com.theninjadev.taskflowapi.exceptions.TaskNotFoundException;
@@ -30,6 +31,7 @@ public class CommentService {
     private final CommentRepository commentRepository;
     private final CommentMapper commentMapper;
     private final ActivityLogService activityLogService;
+    private final NotificationService notificationService;
 
     @Transactional
     public CommentDto createComment(UUID taskId, CreateCommentRequest request, UUID currentUserId) {
@@ -48,6 +50,10 @@ public class CommentService {
                 ? comment.getContent().substring(0, 100) + "..."
                 : comment.getContent();
         activityLogService.log(ActionType.COMMENT_ADDED, task.getBoard(), task, author, Map.of("short_code", task.getShortCode(), "comment_snippet", snippet));
+
+        if (task.getAssignee() != null && task.getAssignee().getId() != currentUserId)
+            notificationService.notify(NotificationType.COMMENT, task.getAssignee(), Map.of("commenter_name", author.getFullName(), "task_title", task.getTitle(), "comment_snippet", snippet));
+
         return commentMapper.toDto(comment);
     }
 

@@ -6,10 +6,7 @@ import com.theninjadev.taskflowapi.dtos.board.InviteMemberRequest;
 import com.theninjadev.taskflowapi.dtos.board.UpdateMemberRoleRequest;
 import com.theninjadev.taskflowapi.entities.BoardInvite;
 import com.theninjadev.taskflowapi.entities.BoardMember;
-import com.theninjadev.taskflowapi.enums.ActionType;
-import com.theninjadev.taskflowapi.enums.BoardInviteRole;
-import com.theninjadev.taskflowapi.enums.BoardRole;
-import com.theninjadev.taskflowapi.enums.InviteStatus;
+import com.theninjadev.taskflowapi.enums.*;
 import com.theninjadev.taskflowapi.exceptions.*;
 import com.theninjadev.taskflowapi.mappers.BoardMapper;
 import com.theninjadev.taskflowapi.repositories.BoardInviteRepository;
@@ -34,6 +31,7 @@ public class BoardMembershipService {
     private final UserRepository userRepository;
     private final BoardService boardService;
     private final ActivityLogService activityLogService;
+    private final NotificationService notificationService;
 
     public List<BoardMemberDto> getBoardMembers(UUID boardId, UUID currentUserId) {
         boardService.getBoardOrThrow(boardId);
@@ -80,8 +78,10 @@ public class BoardMembershipService {
             throw new InviteAlreadyPendingException();
         }
 
-        if (invitedUser != null)
+        if (invitedUser != null) {
             activityLogService.log(ActionType.MEMBER_INVITED, board, null, currentUser, Map.of("invited_name", invitedUser.getFullName(), "role", role.name()));
+            notificationService.notify(NotificationType.INVITE, invitedUser, Map.of("inviter_name", currentUser.getFullName(), "board_name", board.getName(), "role", role.name(), "invite_id", boardInvite.getId()));
+        }
         return boardMapper.toDto(boardInvite);
     }
 
@@ -110,6 +110,7 @@ public class BoardMembershipService {
         }
 
         activityLogService.log(ActionType.MEMBER_ADDED, invite.getBoard(), null, currentUser, Map.of("role", invite.getRole().name()));
+        notificationService.notify(NotificationType.INVITE, invite.getInvitedBy(), Map.of("accepter_name", currentUser.getFullName(), "board_name", board.getName(), "role", invite.getRole().name()));
         return boardMapper.toDto(boardMember);
     }
 
