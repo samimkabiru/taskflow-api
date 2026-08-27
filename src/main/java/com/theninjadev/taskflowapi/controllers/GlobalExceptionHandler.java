@@ -206,4 +206,10 @@ public class GlobalExceptionHandler {
         var problem = ProblemDetail.forStatusAndDetail(HttpStatus.FORBIDDEN, ex.getMessage());
         return ResponseEntity.status(HttpStatus.FORBIDDEN).body(problem);
     }
+
+    @ExceptionHandler(InviteNotPendingException.class)
+    public ResponseEntity<ProblemDetail> handleInviteNotPending(InviteNotPendingException ex) {
+        var problem = ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.getMessage());
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(problem);
+    }
 }

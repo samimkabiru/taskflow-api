@@ -91,6 +91,9 @@ public class BoardMembershipService {
         var board = invite.getBoard();
         var currentUser = userRepository.findById(currentUserId).orElseThrow(UserNotFoundException::new);
 
+        if (invite.getStatus() != InviteStatus.PENDING)
+            throw new InviteNotPendingException();
+
         if (!currentUser.getEmail().equalsIgnoreCase(invite.getEmail()))
             throw new InviteEmailMismatchException();
 
@@ -119,6 +122,9 @@ public class BoardMembershipService {
         var invite = boardInviteRepository.findById(inviteId).orElseThrow(InviteNotFoundException::new);
         var currentUser = userRepository.findById(currentUserId).orElseThrow(UserNotFoundException::new);
 
+        if (invite.getStatus() != InviteStatus.PENDING)
+            throw new InviteNotPendingException();
+
         if (!currentUser.getEmail().equalsIgnoreCase(invite.getEmail()))
             throw new InviteEmailMismatchException();
 
@@ -128,6 +134,10 @@ public class BoardMembershipService {
     @Transactional
     public void revokeInvite(UUID inviteId, UUID currentUserId) {
         var invite = boardInviteRepository.findById(inviteId).orElseThrow(InviteNotFoundException::new);
+
+        if (invite.getStatus() != InviteStatus.PENDING)
+            throw new InviteNotPendingException();
+
         boardService.requireOwnerOrAdmin(invite.getBoard().getId(), currentUserId);
 
         markInviteRevoked(invite);
