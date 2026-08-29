@@ -33,7 +33,7 @@ public class SecurityConfig {
                 c.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(c -> c
-                        .requestMatchers("/auth/register", "/auth/login", "/auth/refresh", "/auth/logout" ).permitAll()
+                        .requestMatchers("/auth/register", "/auth/login", "/auth/refresh", "/auth/logout", "/ws/**" ).permitAll()
                         .anyRequest().authenticated())
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
                 .exceptionHandling(c -> {

@@ -4,6 +4,7 @@ import com.theninjadev.taskflowapi.dtos.task.CreateTaskRequest;
 import com.theninjadev.taskflowapi.dtos.task.MoveTaskRequest;
 import com.theninjadev.taskflowapi.dtos.task.TaskDto;
 import com.theninjadev.taskflowapi.dtos.task.UpdateTaskRequest;
+import com.theninjadev.taskflowapi.dtos.websocket.BoardEvent;
 import com.theninjadev.taskflowapi.entities.Task;
 import com.theninjadev.taskflowapi.entities.User;
 import com.theninjadev.taskflowapi.enums.ActionType;
@@ -19,6 +20,7 @@ import jakarta.transaction.Transactional;
 import lombok.AllArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -38,6 +40,7 @@ public class TaskService {
     private final TaskListRepository taskListRepository;
     private final ActivityLogService activityLogService;
     private final NotificationService notificationService;
+    private final SimpMessagingTemplate messagingTemplate;
 
     @Transactional
     public TaskDto createTask(UUID taskListId, CreateTaskRequest request, UUID currentUserId) {
@@ -148,6 +151,7 @@ public class TaskService {
     @Transactional
     public TaskDto moveTask(UUID taskId, MoveTaskRequest request, UUID currentUserId) {
         var task = taskRepository.findById(taskId).orElseThrow(TaskNotFoundException::new);
+        var boardId = task.getBoard().getId();
         var oldList = task.getTaskList();
         var currentUser = userRepository.findById(currentUserId).orElseThrow(UserNotFoundException::new);
         boardService.requireContributor(task.getBoard().getId(), currentUserId);
@@ -167,12 +171,17 @@ public class TaskService {
         task.setPosition(request.getPosition());
 
         taskRepository.save(task);
+        var taskDto = taskMapper.toDto(task);
+
         activityLogService.log(ActionType.TASK_MOVED, task.getBoard(), task, currentUser, Map.of("short_code", task.getShortCode(), "from_list", oldList.getTitle(), "to_list", newList.getTitle()));
 
-        if (task.getAssignee() != null && task.getAssignee().getId() != currentUserId)
+        if (task.getAssignee() != null && !task.getAssignee().getId().equals(currentUserId))
             notificationService.notify(NotificationType.STATUS_CHANGE, task.getAssignee(), Map.of("mover_name", currentUser.getFullName(), "task_title", task.getTitle(), "to_list", newList.getTitle()));
 
-        return taskMapper.toDto(task);
+        var event = new BoardEvent<>("TASK_MOVED", taskDto);
+        messagingTemplate.convertAndSend("/topic/boards/" + boardId, event);
+
+        return taskDto;
     }
 
     private TaskPriority parsePriority(String priorityStr) {
