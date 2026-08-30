@@ -5,7 +5,7 @@ import com.theninjadev.taskflowapi.entities.Task;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 
-@Mapper(componentModel = "spring")
+@Mapper(componentModel = "spring", uses = LabelMapper.class)
 public interface TaskMapper {
 
     @Mapping(source = "board.id", target = "boardId")
