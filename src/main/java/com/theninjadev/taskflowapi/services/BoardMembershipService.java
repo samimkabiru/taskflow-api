@@ -21,7 +21,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.UUID;
 
 @Service
@@ -47,6 +46,16 @@ public class BoardMembershipService {
         var boardMembers = boardMemberRepository.findByBoardId(boardId);
 
         return boardMembers.stream().map(boardMapper::toDto).toList();
+    }
+
+    public List<BoardInviteDto> getPendingInvites(UUID boardId, UUID currentUserId) {
+        boardService.requireOwnerOrAdmin(boardId, currentUserId);
+
+        return boardInviteRepository
+                .findByBoardIdAndStatus(boardId, InviteStatus.PENDING)
+                .stream()
+                .map(boardMapper::toDto)
+                .toList();
     }
 
     @Transactional

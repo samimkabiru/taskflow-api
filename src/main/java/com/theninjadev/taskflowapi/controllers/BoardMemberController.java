@@ -32,6 +32,15 @@ public class BoardMemberController {
         return ResponseEntity.ok(boardMembersDtos);
     }
 
+    @GetMapping("/{id}/invites/pending")
+    public ResponseEntity<List<BoardInviteDto>> getPendingInvites(
+            @PathVariable(value = "id") UUID boardId
+    ) {
+        var currentUserId = getCurrentUserId();
+
+        return ResponseEntity.ok(boardMembershipService.getPendingInvites(boardId, currentUserId));
+    }
+
     @PostMapping("{id}/invites")
     public ResponseEntity<BoardInviteDto> inviteMember(
             @PathVariable(value = "id") UUID boardId,
