@@ -3,6 +3,7 @@ package com.theninjadev.taskflowapi.services;
 import com.theninjadev.taskflowapi.dtos.board.BoardDto;
 import com.theninjadev.taskflowapi.dtos.board.CreateBoardRequest;
 import com.theninjadev.taskflowapi.dtos.board.UpdateBoardRequest;
+import com.theninjadev.taskflowapi.dtos.websocket.BoardEvent;
 import com.theninjadev.taskflowapi.entities.Board;
 import com.theninjadev.taskflowapi.entities.BoardMember;
 import com.theninjadev.taskflowapi.enums.ActionType;
@@ -17,6 +18,7 @@ import com.theninjadev.taskflowapi.repositories.BoardRepository;
 import com.theninjadev.taskflowapi.repositories.UserRepository;
 import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -33,6 +35,7 @@ public class BoardService {
     private final UserRepository userRepository;
     private final BoardMemberRepository boardMemberRepository;
     private final ActivityLogService activityLogService;
+    private final SimpMessagingTemplate messagingTemplate;
 
     @Transactional
     public BoardDto createBoard(CreateBoardRequest request, UUID currentUserId) {
@@ -84,8 +87,12 @@ public class BoardService {
         if (request.getTaskPrefix() != null) board.setTaskPrefix(request.getTaskPrefix());
 
         boardRepository.save(board);
+        var boardDto = boardMapper.toDto(board);
 
-        return boardMapper.toDto(board);
+        var event = new BoardEvent<>("BOARD_UPDATED", boardDto);
+        messagingTemplate.convertAndSend("/topic/boards/" + boardId, event);
+
+        return boardDto;
     }
 
     public void deleteBoard(UUID boardId, UUID currentUserId) {
@@ -95,6 +102,9 @@ public class BoardService {
 
         if (member.getRole() != BoardRole.OWNER)
             throw new InsufficientRoleException();
+
+        var event = new BoardEvent<>("BOARD_DELETED", boardMapper.toDto(board));
+        messagingTemplate.convertAndSend("/topic/boards/" + boardId, event);
 
         boardRepository.delete(board);
     }

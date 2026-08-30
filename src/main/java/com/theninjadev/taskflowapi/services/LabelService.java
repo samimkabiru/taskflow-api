@@ -4,6 +4,7 @@ import com.theninjadev.taskflowapi.dtos.label.AssignLabelsRequest;
 import com.theninjadev.taskflowapi.dtos.label.CreateLabelRequest;
 import com.theninjadev.taskflowapi.dtos.label.LabelDto;
 import com.theninjadev.taskflowapi.dtos.label.UpdateLabelRequest;
+import com.theninjadev.taskflowapi.dtos.websocket.BoardEvent;
 import com.theninjadev.taskflowapi.entities.Label;
 import com.theninjadev.taskflowapi.exceptions.DuplicateLabelNameException;
 import com.theninjadev.taskflowapi.exceptions.LabelNotFoundException;
@@ -14,6 +15,7 @@ import com.theninjadev.taskflowapi.repositories.LabelRepository;
 import com.theninjadev.taskflowapi.repositories.TaskRepository;
 import lombok.AllArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -26,6 +28,7 @@ public class LabelService {
     private final LabelRepository labelRepository;
     private final LabelMapper labelMapper;
     private final TaskRepository taskRepository;
+    private final SimpMessagingTemplate messagingTemplate;
 
     public LabelDto createLabel(UUID boardId, CreateLabelRequest request, UUID currentUserId) {
         var name = request.getName().trim();
@@ -46,7 +49,12 @@ public class LabelService {
         } catch (DataIntegrityViolationException e) {
             throw new DuplicateLabelNameException();
         }
-        return labelMapper.toDto(label);
+        var labelDto = labelMapper.toDto(label);
+
+        var event = new BoardEvent<>("LABEL_CREATED", labelDto);
+        messagingTemplate.convertAndSend("/topic/boards/" + boardId, event);
+
+        return labelDto;
     }
 
     public List<LabelDto> getLabelsForBoard(UUID boardId, UUID currentUserId) {
@@ -77,13 +85,21 @@ public class LabelService {
         if (request.getColor() != null) label.setColor(request.getColor().toLowerCase());
 
         labelRepository.save(label);
-        return labelMapper.toDto(label);
+        var labelDto = labelMapper.toDto(label);
+
+        var event = new BoardEvent<>("LABEL_UPDATED", labelDto);
+        messagingTemplate.convertAndSend("/topic/boards/" + boardId, event);
+
+        return labelDto;
     }
 
     public void deleteLabel(UUID labelId, UUID currentUserId) {
         var label = labelRepository.findById(labelId).orElseThrow(LabelNotFoundException::new);
         var boardId = label.getBoard().getId();
         boardService.requireContributor(boardId, currentUserId);
+
+        var event = new BoardEvent<>("LABEL_DELETED", labelMapper.toDto(label));
+        messagingTemplate.convertAndSend("/topic/boards/" + boardId, event);
 
         labelRepository.delete(label);
     }
@@ -106,5 +122,10 @@ public class LabelService {
         task.getLabels().clear();
         task.getLabels().addAll(labels);
         taskRepository.save(task);
+
+        var labelsDto = labels.stream().map(labelMapper::toDto).toList();
+
+        var event = new BoardEvent<>("TASK_LABELS_CHANGED", labelsDto);
+        messagingTemplate.convertAndSend("/topic/boards/" + boardId, event);
     }
 }

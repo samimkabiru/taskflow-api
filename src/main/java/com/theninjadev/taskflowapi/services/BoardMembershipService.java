@@ -4,6 +4,7 @@ import com.theninjadev.taskflowapi.dtos.board.BoardInviteDto;
 import com.theninjadev.taskflowapi.dtos.board.BoardMemberDto;
 import com.theninjadev.taskflowapi.dtos.board.InviteMemberRequest;
 import com.theninjadev.taskflowapi.dtos.board.UpdateMemberRoleRequest;
+import com.theninjadev.taskflowapi.dtos.websocket.BoardEvent;
 import com.theninjadev.taskflowapi.entities.BoardInvite;
 import com.theninjadev.taskflowapi.entities.BoardMember;
 import com.theninjadev.taskflowapi.enums.*;
@@ -14,6 +15,7 @@ import com.theninjadev.taskflowapi.repositories.BoardMemberRepository;
 import com.theninjadev.taskflowapi.repositories.UserRepository;
 import lombok.AllArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -32,6 +34,8 @@ public class BoardMembershipService {
     private final BoardService boardService;
     private final ActivityLogService activityLogService;
     private final NotificationService notificationService;
+    private final SimpMessagingTemplate messagingTemplate;
+
 
     public List<BoardMemberDto> getBoardMembers(UUID boardId, UUID currentUserId) {
         boardService.getBoardOrThrow(boardId);
@@ -50,7 +54,7 @@ public class BoardMembershipService {
         var email = request.getEmail().trim().toLowerCase();
         var board = boardService.getBoardOrThrow(boardId);
         var currentUser = userRepository.findById(currentUserId).orElseThrow(UserNotFoundException::new);
-        var currentBoardMember = requireOwnerOrAdmin(boardId, currentUserId);
+        var currentBoardMember = boardService.requireOwnerOrAdmin(boardId, currentUserId);
 
         var invitedUser = userRepository.findByEmail(email).orElse(null);
         var invitedUserIsMember = invitedUser != null && boardMemberRepository.existsByBoardIdAndUserId(boardId, invitedUser.getId());
@@ -77,12 +81,17 @@ public class BoardMembershipService {
         } catch (DataIntegrityViolationException e) {
             throw new InviteAlreadyPendingException();
         }
+        var boardInviteDto = boardMapper.toDto(boardInvite);
 
         if (invitedUser != null) {
             activityLogService.log(ActionType.MEMBER_INVITED, board, null, currentUser, Map.of("invited_name", invitedUser.getFullName(), "role", role.name()));
             notificationService.notify(NotificationType.INVITE, invitedUser, Map.of("inviter_name", currentUser.getFullName(), "board_name", board.getName(), "role", role.name(), "invite_id", boardInvite.getId()));
         }
-        return boardMapper.toDto(boardInvite);
+
+        var event = new BoardEvent<>("MEMBER_INVITED", boardInviteDto);
+        messagingTemplate.convertAndSend("/topic/boards/" + boardId, event);
+
+        return boardInviteDto;
     }
 
     @Transactional
@@ -112,9 +121,15 @@ public class BoardMembershipService {
             throw new AlreadyBoardMemberException();
         }
 
+        var boardMemberDto = boardMapper.toDto(boardMember);
+
         activityLogService.log(ActionType.MEMBER_ADDED, invite.getBoard(), null, currentUser, Map.of("role", invite.getRole().name()));
         notificationService.notify(NotificationType.INVITE, invite.getInvitedBy(), Map.of("accepter_name", currentUser.getFullName(), "board_name", board.getName(), "role", invite.getRole().name()));
-        return boardMapper.toDto(boardMember);
+
+        var event = new BoardEvent<>("MEMBER_ADDED", boardMemberDto);
+        messagingTemplate.convertAndSend("/topic/boards/" + board.getId(), event);
+
+        return boardMemberDto;
     }
 
     @Transactional
@@ -151,7 +166,7 @@ public class BoardMembershipService {
             UUID currentUserId) {
         var board = boardService.getBoardOrThrow(boardId);
         var currentUser = userRepository.findById(currentUserId).orElseThrow(UserNotFoundException::new);
-        requireOwnerOrAdmin(boardId, currentUserId);
+        boardService.requireOwnerOrAdmin(boardId, currentUserId);
 
         var targetBoardMember = guardTargetNotOwner(boardId, targetUserId);
 
@@ -167,20 +182,32 @@ public class BoardMembershipService {
 
         targetBoardMember.setRole(role);
 
+        var boardMemberDto = boardMapper.toDto(targetBoardMember);
+
         activityLogService.log(ActionType.MEMBER_ROLE_CHANGED, board, null, currentUser, Map.of("member_name", targetBoardMember.getUser().getFullName(), "new_role", role.name()));
         boardMemberRepository.save(targetBoardMember);
-        return boardMapper.toDto(targetBoardMember);
+
+
+        var event = new BoardEvent<>("MEMBER_ROLE_CHANGED", boardMemberDto);
+        messagingTemplate.convertAndSend("/topic/boards/" + boardId, event);
+
+        return boardMemberDto;
     }
 
     @Transactional
     public void removeMember(UUID boardId, UUID targetUserId, UUID currentUserId) {
         var board = boardService.getBoardOrThrow(boardId);
         var currentUser = userRepository.findById(currentUserId).orElseThrow(UserNotFoundException::new);
-        requireOwnerOrAdmin(boardId, currentUserId);
+        boardService.requireOwnerOrAdmin(boardId, currentUserId);
 
         var targetBoardMember = guardTargetNotOwner(boardId, targetUserId);
+        var boardMemberDto = boardMapper.toDto(targetBoardMember);
 
         activityLogService.log(ActionType.MEMBER_REMOVED, board, null, currentUser, Map.of("removed_name", targetBoardMember.getUser().getFullName()));
+
+        var event = new BoardEvent<>("MEMBER_REMOVED", boardMemberDto);
+        messagingTemplate.convertAndSend("/topic/boards/" + board.getId(), event);
+
         boardMemberRepository.delete(targetBoardMember);
 
     }
@@ -190,23 +217,15 @@ public class BoardMembershipService {
 
         var targetBoardMember = guardTargetNotOwner(boardId, currentUserId);
 
+        var event = new BoardEvent<>("MEMBER_REMOVED", boardMapper.toDto(targetBoardMember));
+        messagingTemplate.convertAndSend("/topic/boards/" + boardId, event);
+
         boardMemberRepository.delete(targetBoardMember);
     }
 
     private void markInviteRevoked(BoardInvite invite) {
         invite.setStatus(InviteStatus.REVOKED);
         boardInviteRepository.save(invite);
-    }
-
-    private BoardMember requireOwnerOrAdmin(UUID boardId, UUID currentUserId) {
-        var currentBoardMember = boardMemberRepository
-                .findByBoardIdAndUserId(boardId, currentUserId)
-                .orElseThrow(NotBoardMemberException::new);
-
-        if (!Set.of(BoardRole.OWNER, BoardRole.ADMIN).contains(currentBoardMember.getRole()))
-            throw new InsufficientRoleException();
-
-        return currentBoardMember;
     }
 
     private BoardMember guardTargetNotOwner(UUID boardId, UUID targetUserId) {

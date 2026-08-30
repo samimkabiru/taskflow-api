@@ -70,13 +70,17 @@ public class TaskService {
         if (request.getPriority() != null) task.setPriority(priority);
 
         taskRepository.saveAndFlush(task);
+        var taskDto = taskMapper.toDto(task);
+
         activityLogService.log(ActionType.TASK_CREATED, board, task, currentUser, Map.of("short_code", task.getShortCode()));
+        var event = new BoardEvent<>("TASK_CREATED", taskDto);
+        messagingTemplate.convertAndSend("/topic/boards/" + board.getId(), event);
 
         if (request.getAssigneeId() != null) {
             notificationService.notify(NotificationType.ASSIGNMENT, assignee, Map.of("assigner_name", currentUser.getFullName(), "task_title", task.getTitle(), "short_code", task.getShortCode()));
         }
 
-        return taskMapper.toDto(task);
+        return taskDto;
     }
 
     public TaskDto getTask(UUID taskId, UUID currentUserId) {
@@ -121,6 +125,7 @@ public class TaskService {
         if (request.getDueDate() != null) task.setDueDate(request.getDueDate());
 
         taskRepository.save(task);
+        var taskDto = taskMapper.toDto(task);
 
         if (request.getTitle() != null || request.getDescription() != null || request.getDueDate() != null)
             activityLogService.log(ActionType.TASK_UPDATED, task.getBoard(), task, currentUser, Map.of("short_code", task.getShortCode()));
@@ -133,7 +138,10 @@ public class TaskService {
             notificationService.notify(NotificationType.ASSIGNMENT, assignee, Map.of("assigner_name", currentUser.getFullName(), "task_title", task.getTitle(), "short_code", task.getShortCode()));
         }
 
-        return taskMapper.toDto(task);
+        var event = new BoardEvent<>("TASK_UPDATED", taskDto);
+        messagingTemplate.convertAndSend("/topic/boards/" + task.getBoard().getId(), event);
+
+        return taskDto;
     }
 
 
@@ -145,6 +153,10 @@ public class TaskService {
         boardService.requireContributor(task.getBoard().getId(), currentUserId);
 
         activityLogService.log(ActionType.TASK_DELETED, task.getBoard(), task, currentUser, Map.of("short_code", task.getShortCode(), "title", task.getTitle()));
+
+        var event = new BoardEvent<>("TASK_DELETED", taskMapper.toDto(task));
+        messagingTemplate.convertAndSend("/topic/boards/" + task.getBoard().getId(), event);
+
         taskRepository.delete(task);
     }
 

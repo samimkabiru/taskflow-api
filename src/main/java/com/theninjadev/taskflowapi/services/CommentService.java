@@ -3,6 +3,7 @@ package com.theninjadev.taskflowapi.services;
 import com.theninjadev.taskflowapi.dtos.comment.CommentDto;
 import com.theninjadev.taskflowapi.dtos.comment.CreateCommentRequest;
 import com.theninjadev.taskflowapi.dtos.comment.UpdateCommentRequest;
+import com.theninjadev.taskflowapi.dtos.websocket.BoardEvent;
 import com.theninjadev.taskflowapi.entities.Comment;
 import com.theninjadev.taskflowapi.enums.ActionType;
 import com.theninjadev.taskflowapi.enums.NotificationType;
@@ -15,6 +16,7 @@ import com.theninjadev.taskflowapi.repositories.CommentRepository;
 import com.theninjadev.taskflowapi.repositories.TaskRepository;
 import com.theninjadev.taskflowapi.repositories.UserRepository;
 import lombok.AllArgsConstructor;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -32,6 +34,7 @@ public class CommentService {
     private final CommentMapper commentMapper;
     private final ActivityLogService activityLogService;
     private final NotificationService notificationService;
+    private final SimpMessagingTemplate messagingTemplate;
 
     @Transactional
     public CommentDto createComment(UUID taskId, CreateCommentRequest request, UUID currentUserId) {
@@ -46,15 +49,20 @@ public class CommentService {
         comment.setAuthor(author);
 
         commentRepository.save(comment);
+        var commentDto = commentMapper.toDto(comment);
+
         var snippet = comment.getContent().length() > 100
                 ? comment.getContent().substring(0, 100) + "..."
                 : comment.getContent();
         activityLogService.log(ActionType.COMMENT_ADDED, task.getBoard(), task, author, Map.of("short_code", task.getShortCode(), "comment_snippet", snippet));
 
-        if (task.getAssignee() != null && task.getAssignee().getId() != currentUserId)
+        var event = new BoardEvent<>("COMMENT_ADDED", commentDto);
+        messagingTemplate.convertAndSend("/topic/boards/" + boardId, event);
+
+        if (task.getAssignee() != null && !task.getAssignee().getId().equals(currentUserId))
             notificationService.notify(NotificationType.COMMENT, task.getAssignee(), Map.of("commenter_name", author.getFullName(), "task_title", task.getTitle(), "comment_snippet", snippet));
 
-        return commentMapper.toDto(comment);
+        return commentDto;
     }
 
     public List<CommentDto> getCommentsForTask(UUID taskId, UUID currentUserId) {
@@ -77,7 +85,12 @@ public class CommentService {
 
         comment.setContent(request.getContent());
         commentRepository.save(comment);
-        return commentMapper.toDto(comment);
+        var commentDto = commentMapper.toDto(comment);
+
+        var event = new BoardEvent<>("COMMENT_UPDATED", commentDto);
+        messagingTemplate.convertAndSend("/topic/boards/" + comment.getTask().getBoard().getId(), event);
+
+        return commentDto;
     }
 
     public void deleteComment(UUID commentId, UUID currentUserId) {
@@ -88,6 +101,10 @@ public class CommentService {
             boardService.requireOwnerOrAdmin(boardId, currentUserId);
         }
 
+        var commentDto = commentMapper.toDto(comment);
         commentRepository.delete(comment);
+
+        var event = new BoardEvent<>("COMMENT_DELETED", commentDto);
+        messagingTemplate.convertAndSend("/topic/boards/" + boardId, event);
     }
 }

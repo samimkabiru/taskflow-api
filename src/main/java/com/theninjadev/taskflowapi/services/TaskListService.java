@@ -4,6 +4,7 @@ import com.theninjadev.taskflowapi.dtos.tasklist.CreateTaskListRequest;
 import com.theninjadev.taskflowapi.dtos.tasklist.ReorderTaskListRequest;
 import com.theninjadev.taskflowapi.dtos.tasklist.TaskListDto;
 import com.theninjadev.taskflowapi.dtos.tasklist.UpdateTaskListRequest;
+import com.theninjadev.taskflowapi.dtos.websocket.BoardEvent;
 import com.theninjadev.taskflowapi.entities.TaskList;
 import com.theninjadev.taskflowapi.entities.User;
 import com.theninjadev.taskflowapi.enums.ActionType;
@@ -13,6 +14,7 @@ import com.theninjadev.taskflowapi.mappers.TaskListMapper;
 import com.theninjadev.taskflowapi.repositories.TaskListRepository;
 import com.theninjadev.taskflowapi.repositories.UserRepository;
 import lombok.AllArgsConstructor;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -28,6 +30,7 @@ public class TaskListService {
     private final TaskListMapper taskListMapper;
     private final ActivityLogService activityLogService;
     private final UserRepository userRepository;
+    private final SimpMessagingTemplate messagingTemplate;
 
     @Transactional
     public TaskListDto createTaskList(UUID boardId, CreateTaskListRequest request, UUID currentUserId) {
@@ -47,9 +50,14 @@ public class TaskListService {
         taskList.setPosition(newPosition);
 
         taskListRepository.saveAndFlush(taskList);
+        var taskListDto = taskListMapper.toDto(taskList);
 
         activityLogService.log(ActionType.LIST_CREATED, board, null, getCurrentUser(currentUserId), Map.of("list_title", taskList.getTitle()));
-        return taskListMapper.toDto(taskList);
+
+        var event = new BoardEvent<>("LIST_CREATED", taskListDto);
+        messagingTemplate.convertAndSend("/topic/boards/" + boardId, event);
+
+        return taskListDto;
     }
 
     public List<TaskListDto> getTaskListsForBoard(UUID boardId, UUID currentUserId) {
@@ -65,33 +73,47 @@ public class TaskListService {
 
     @Transactional
     public TaskListDto updateTaskList(UUID listId, UpdateTaskListRequest request, UUID currentUserId) {
-        var tasklist = getTaskListAndVerifyContributor(listId, currentUserId);
-        var oldTitle = tasklist.getTitle();
+        var taskList = getTaskListAndVerifyContributor(listId, currentUserId);
+        var oldTitle = taskList.getTitle();
 
-        if (request.getTitle() != null) tasklist.setTitle(request.getTitle());
+        if (request.getTitle() != null) taskList.setTitle(request.getTitle());
 
-        taskListRepository.save(tasklist);
+        taskListRepository.save(taskList);
+        var taskListDto = taskListMapper.toDto(taskList);
 
         if (request.getTitle() != null)
-            activityLogService.log(ActionType.LIST_RENAMED, tasklist.getBoard(), null, getCurrentUser(currentUserId), Map.of("old_title", oldTitle, "new_title", tasklist.getTitle()));
-        return taskListMapper.toDto(tasklist);
+            activityLogService.log(ActionType.LIST_RENAMED, taskList.getBoard(), null, getCurrentUser(currentUserId), Map.of("old_title", oldTitle, "new_title", taskList.getTitle()));
+
+        var event = new BoardEvent<>("LIST_RENAMED", taskListDto);
+        messagingTemplate.convertAndSend("/topic/boards/" + taskList.getBoard().getId(), event);
+
+        return taskListDto;
     }
 
     @Transactional
     public void deleteTaskList(UUID listId, UUID currentUserId) {
-        var tasklist = getTaskListAndVerifyContributor(listId, currentUserId);
+        var taskList = getTaskListAndVerifyContributor(listId, currentUserId);
+        var taskListDto = taskListMapper.toDto(taskList);
 
-        activityLogService.log(ActionType.LIST_DELETED, tasklist.getBoard(), null, getCurrentUser(currentUserId), Map.of("list_title", tasklist.getTitle()));
-        taskListRepository.delete(tasklist);
+        activityLogService.log(ActionType.LIST_DELETED, taskList.getBoard(), null, getCurrentUser(currentUserId), Map.of("list_title", taskList.getTitle()));
+
+        var event = new BoardEvent<>("LIST_DELETED", taskListDto);
+        messagingTemplate.convertAndSend("/topic/boards/" + taskList.getBoard().getId(), event);
+
+        taskListRepository.delete(taskList);
     }
 
     public TaskListDto reorderTaskList(UUID listId, ReorderTaskListRequest request, UUID currentUserId) {
-        var tasklist = getTaskListAndVerifyContributor(listId, currentUserId);
+        var taskList = getTaskListAndVerifyContributor(listId, currentUserId);
 
-        tasklist.setPosition(request.getPosition());
-        taskListRepository.save(tasklist);
+        taskList.setPosition(request.getPosition());
+        taskListRepository.save(taskList);
+        var taskListDto = taskListMapper.toDto(taskList);
 
-        return taskListMapper.toDto(tasklist);
+        var event = new BoardEvent<>("LIST_REORDERED", taskListDto);
+        messagingTemplate.convertAndSend("/topic/boards/" + taskList.getBoard().getId(), event);
+
+        return taskListDto;
     }
 
     private User getCurrentUser(UUID currentUserId) {

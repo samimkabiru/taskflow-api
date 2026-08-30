@@ -2,6 +2,7 @@ package com.theninjadev.taskflowapi.services;
 
 import com.theninjadev.taskflowapi.dtos.attachment.AttachmentDto;
 import com.theninjadev.taskflowapi.dtos.attachment.DownloadAttachmentResult;
+import com.theninjadev.taskflowapi.dtos.websocket.BoardEvent;
 import com.theninjadev.taskflowapi.entities.Attachment;
 import com.theninjadev.taskflowapi.enums.ActionType;
 import com.theninjadev.taskflowapi.exceptions.*;
@@ -11,6 +12,7 @@ import com.theninjadev.taskflowapi.repositories.TaskRepository;
 import com.theninjadev.taskflowapi.repositories.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.unit.DataSize;
@@ -30,6 +32,7 @@ public class AttachmentService {
     private final AttachmentMapper attachmentMapper;
     private final AttachmentRepository attachmentRepository;
     private final ActivityLogService activityLogService;
+    private final SimpMessagingTemplate messagingTemplate;
 
     @Value("${spring.servlet.multipart.max-file-size}")
     private DataSize maxFileSize;
@@ -59,8 +62,13 @@ public class AttachmentService {
         attachment.setTask(task);
 
         attachmentRepository.saveAndFlush(attachment);
+        var attachmentDto = attachmentMapper.toDto(attachment);
         activityLogService.log(ActionType.ATTACHMENT_ADDED, task.getBoard(), task, currentUser, Map.of("short_code", task.getShortCode(), "attachment_name", file.getOriginalFilename() != null ?  file.getOriginalFilename() : "file"));
-        return attachmentMapper.toDto(attachment);
+
+        var event = new BoardEvent<>("ATTACHMENT_ADDED", attachmentDto);
+        messagingTemplate.convertAndSend("/topic/boards/" + boardId, event);
+
+        return attachmentDto;
 
     }
 
@@ -94,6 +102,10 @@ public class AttachmentService {
         boardService.requireContributor(boardId, currentUserId);
 
         activityLogService.log(ActionType.ATTACHMENT_REMOVED, attachment.getTask().getBoard(), attachment.getTask(), currentUser, Map.of("short_code", attachment.getTask().getShortCode(), "attachment_name", attachment.getFileName()));
+
+        var event = new BoardEvent<>("ATTACHMENT_REMOVED", attachmentMapper.toDto(attachment));
+        messagingTemplate.convertAndSend("/topic/boards/" + boardId, event);
+
         attachmentRepository.delete(attachment);
         fileStorageService.delete(attachment.getStorageKey());
     }
