@@ -5,6 +5,7 @@ import com.theninjadev.taskflowapi.dtos.label.CreateLabelRequest;
 import com.theninjadev.taskflowapi.dtos.label.LabelDto;
 import com.theninjadev.taskflowapi.dtos.label.UpdateLabelRequest;
 import com.theninjadev.taskflowapi.dtos.websocket.BoardEvent;
+import com.theninjadev.taskflowapi.dtos.websocket.TaskLabelsChangedPayload;
 import com.theninjadev.taskflowapi.entities.Label;
 import com.theninjadev.taskflowapi.exceptions.DuplicateLabelNameException;
 import com.theninjadev.taskflowapi.exceptions.LabelNotFoundException;
@@ -125,7 +126,7 @@ public class LabelService {
 
         var labelsDto = labels.stream().map(labelMapper::toDto).toList();
 
-        var event = new BoardEvent<>("TASK_LABELS_CHANGED", labelsDto);
+        var event = new BoardEvent<>("TASK_LABELS_CHANGED", new TaskLabelsChangedPayload(taskId, labelsDto));
         messagingTemplate.convertAndSend("/topic/boards/" + boardId, event);
     }
 }

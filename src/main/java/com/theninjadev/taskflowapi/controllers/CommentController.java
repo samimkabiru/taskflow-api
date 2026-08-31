@@ -56,7 +56,7 @@ public class CommentController {
 
         commentService.deleteComment(commentId, currentUserId);
 
-        return ResponseEntity.ok().build();
+        return ResponseEntity.noContent().build();
     }
 
     private UUID getCurrentUserId() {
