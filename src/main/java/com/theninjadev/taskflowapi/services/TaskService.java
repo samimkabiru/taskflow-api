@@ -108,6 +108,14 @@ public class TaskService {
                 .toList();
     }
 
+    public List<TaskDto> getTasksForUser(UUID currentUserId) {
+        return taskRepository
+                .findByAssigneeId(currentUserId)
+                .stream()
+                .map(taskMapper::toDto)
+                .toList();
+    }
+
     @Transactional
     public TaskDto updateTask(UUID taskId, UpdateTaskRequest request, UUID currentUserId) {
         var task = taskRepository.findById(taskId).orElseThrow(TaskNotFoundException::new);

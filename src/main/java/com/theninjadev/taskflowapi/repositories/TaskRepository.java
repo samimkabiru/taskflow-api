@@ -14,6 +14,8 @@ public interface TaskRepository extends JpaRepository<Task, UUID>, TaskRepositor
     // Tasks within one list, in drag-order — the bread-and-butter query for rendering a column
     List<Task> findByTaskListIdOrderByPositionAsc(UUID taskListId);
 
+    List<Task> findByAssigneeId(UUID assigneeId);
+
     // Paginated, board-scoped — avoids ever loading "all tasks on a board" unbounded
     Page<Task> findByBoardId(UUID boardId, Pageable pageable);
 

@@ -64,6 +64,13 @@ public class TaskController {
         return ResponseEntity.ok(taskService.getTasksForList(taskListId, currentUserId));
     }
 
+    @GetMapping("users/me/tasks")
+    public ResponseEntity<List<TaskDto>> getTasksForUser() {
+        var currentUserId = getCurrentUserId();
+
+        return ResponseEntity.ok(taskService.getTasksForUser(currentUserId));
+    }
+
     @PatchMapping("/tasks/{id}")
     public ResponseEntity<TaskDto> updateTask(
             @PathVariable(value = "id") UUID taskId,
