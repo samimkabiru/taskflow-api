@@ -1,4 +1,3 @@
--- V12__fix_notifications_type_constraint.sql
 -- Syncs notifications.type check constraint with the updated NotificationType enum
 -- (ASSIGNMENT, DUE_SOON, COMMENT, STATUS_CHANGE, INVITE)
 
