@@ -51,6 +51,13 @@ public class NotificationController {
         return ResponseEntity.noContent().build();
     }
 
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteNotification(@PathVariable(value = "id") UUID notificationId) {
+        notificationService.deleteNotification(notificationId, getCurrentUserId());
+
+        return ResponseEntity.noContent().build();
+    }
+
     private UUID getCurrentUserId() {
         return (UUID) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
     }

@@ -63,4 +63,14 @@ public class NotificationService {
     public void clearAll(UUID currentUserId) {
         notificationRepository.deleteByRecipientId(currentUserId);
     }
+
+    public void deleteNotification(UUID notificationId, UUID currentUserId) {
+        var notification = notificationRepository.findById(notificationId).orElseThrow(NotificationNotFoundException::new);
+
+        if (!notification.getRecipient().getId().equals(currentUserId))
+            throw new NotYourNotificationException();
+
+        notificationRepository.delete(notification);
+
+    }
 }
