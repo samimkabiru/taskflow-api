@@ -4,6 +4,7 @@ import com.theninjadev.taskflowapi.enums.NotificationType;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
+import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
@@ -36,6 +37,7 @@ public class Notification {
     @Column(name = "is_read")
     private Boolean isRead;
 
+    @CreationTimestamp
     @Column(name = "created_at")
     private OffsetDateTime createdAt;
 }
