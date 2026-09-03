@@ -160,7 +160,7 @@ public class TaskService {
 
         boardService.requireContributor(task.getBoard().getId(), currentUserId);
 
-        activityLogService.log(ActionType.TASK_DELETED, task.getBoard(), task, currentUser, Map.of("short_code", task.getShortCode(), "title", task.getTitle()));
+        activityLogService.log(ActionType.TASK_DELETED, task.getBoard(), null, currentUser, Map.of("short_code", task.getShortCode(), "title", task.getTitle()));
 
         var event = new BoardEvent<>("TASK_DELETED", taskMapper.toDto(task));
         messagingTemplate.convertAndSend("/topic/boards/" + task.getBoard().getId(), event);
