@@ -76,9 +76,7 @@ public class TaskService {
         var event = new BoardEvent<>("TASK_CREATED", taskDto);
         messagingTemplate.convertAndSend("/topic/boards/" + board.getId(), event);
 
-        if (request.getAssigneeId() != null) {
-            notificationService.notify(NotificationType.ASSIGNMENT, assignee, Map.of("assigner_name", currentUser.getFullName(), "task_title", task.getTitle(), "short_code", task.getShortCode()));
-        }
+        notifyAndLogIfAssigneeExists(task, currentUser, assignee, request.getAssigneeId());
 
         return taskDto;
     }
@@ -141,10 +139,7 @@ public class TaskService {
         if (request.getPriority() != null)
             activityLogService.log(ActionType.PRIORITY_CHANGED, task.getBoard(), task, currentUser, Map.of("short_code", task.getShortCode(), "from", oldPriority != null ? oldPriority.name() : "none", "to", priority.name()));
 
-        if (request.getAssigneeId() != null) {
-            activityLogService.log(ActionType.ASSIGNEE_CHANGED, task.getBoard(), task, currentUser, Map.of("short_code", task.getShortCode(), "assignee_name", assignee.getFullName()));
-            notificationService.notify(NotificationType.ASSIGNMENT, assignee, Map.of("assigner_name", currentUser.getFullName(), "task_title", task.getTitle(), "short_code", task.getShortCode()));
-        }
+        notifyAndLogIfAssigneeExists(task, currentUser, assignee, request.getAssigneeId());
 
         var event = new BoardEvent<>("TASK_UPDATED", taskDto);
         messagingTemplate.convertAndSend("/topic/boards/" + task.getBoard().getId(), event);
@@ -202,6 +197,13 @@ public class TaskService {
         messagingTemplate.convertAndSend("/topic/boards/" + boardId, event);
 
         return taskDto;
+    }
+
+    private void notifyAndLogIfAssigneeExists(Task task, User currentUser, User assignee, UUID assigneeId) {
+        if (assigneeId != null) {
+            activityLogService.log(ActionType.ASSIGNEE_CHANGED, task.getBoard(), task, currentUser, Map.of("short_code", task.getShortCode(), "assignee_name", assignee.getFullName()));
+            notificationService.notify(NotificationType.ASSIGNMENT, assignee, Map.of("assigner_name", currentUser.getFullName(), "task_title", task.getTitle(), "short_code", task.getShortCode()));
+        }
     }
 
     private TaskPriority parsePriority(String priorityStr) {
