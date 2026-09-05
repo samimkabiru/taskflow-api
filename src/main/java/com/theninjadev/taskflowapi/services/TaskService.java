@@ -191,7 +191,7 @@ public class TaskService {
         activityLogService.log(ActionType.TASK_MOVED, task.getBoard(), task, currentUser, Map.of("short_code", task.getShortCode(), "from_list", oldList.getTitle(), "to_list", newList.getTitle()));
 
         if (task.getAssignee() != null && !task.getAssignee().getId().equals(currentUserId))
-            notificationService.notify(NotificationType.STATUS_CHANGE, task.getAssignee(), Map.of("mover_name", currentUser.getFullName(), "task_title", task.getTitle(), "to_list", newList.getTitle()));
+            notificationService.notify(NotificationType.STATUS_CHANGE, task.getAssignee(), Map.of("task_id", taskId, "board_id", boardId, "short_code", task.getShortCode(),"mover_name", currentUser.getFullName(), "to_list", newList.getTitle()));
 
         var event = new BoardEvent<>("TASK_MOVED", taskDto);
         messagingTemplate.convertAndSend("/topic/boards/" + boardId, event);

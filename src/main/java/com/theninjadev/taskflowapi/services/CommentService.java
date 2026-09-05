@@ -60,7 +60,7 @@ public class CommentService {
         messagingTemplate.convertAndSend("/topic/boards/" + boardId, event);
 
         if (task.getAssignee() != null && !task.getAssignee().getId().equals(currentUserId))
-            notificationService.notify(NotificationType.COMMENT, task.getAssignee(), Map.of("commenter_name", author.getFullName(), "task_title", task.getTitle(), "comment_snippet", snippet));
+            notificationService.notify(NotificationType.COMMENT, task.getAssignee(), Map.of("task_id", taskId, "board_id", boardId, "short_code", task.getShortCode(),"commenter_name", author.getFullName(),"comment_snippet", snippet));
 
         return commentDto;
     }

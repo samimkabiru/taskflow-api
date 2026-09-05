@@ -5,6 +5,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -18,6 +19,8 @@ public interface TaskRepository extends JpaRepository<Task, UUID>, TaskRepositor
 
     // Paginated, board-scoped — avoids ever loading "all tasks on a board" unbounded
     Page<Task> findByBoardId(UUID boardId, Pageable pageable);
+
+    List<Task> findByDueDateAndAssigneeIsNotNull(LocalDate dueDate);
 
     Page<Task> findByBoardIdAndAssigneeId(UUID boardId, UUID assigneeId, Pageable pageable);
 
