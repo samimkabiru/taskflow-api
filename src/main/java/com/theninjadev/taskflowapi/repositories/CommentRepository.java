@@ -10,4 +10,6 @@ public interface CommentRepository extends JpaRepository<Comment, UUID> {
 
     // Oldest first — matches a normal comment-thread reading order
     List<Comment> findByTaskIdOrderByCreatedAtAsc(UUID taskId);
+
+    long countByTaskId(UUID taskId);
 }

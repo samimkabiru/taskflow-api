@@ -20,6 +20,15 @@ public record TaskDto(
         UUID assigneeId,
         UUID createdBy,
         Set<LabelDto> labels,
+        long commentCount,
+        long attachmentCount,
         OffsetDateTime createdAt,
         OffsetDateTime updatedAt
-) {}
+) {
+
+    public TaskDto withCounts(long commentCount, long attachmentCount) {
+        return new TaskDto(id, boardId, taskListId, shortCode, title, description,
+                position, priority, dueDate, assigneeId, createdBy, labels,
+                commentCount, attachmentCount, createdAt, updatedAt);
+    }
+}

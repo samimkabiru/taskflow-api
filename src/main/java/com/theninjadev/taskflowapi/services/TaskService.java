@@ -12,10 +12,7 @@ import com.theninjadev.taskflowapi.enums.NotificationType;
 import com.theninjadev.taskflowapi.enums.TaskPriority;
 import com.theninjadev.taskflowapi.exceptions.*;
 import com.theninjadev.taskflowapi.mappers.TaskMapper;
-import com.theninjadev.taskflowapi.repositories.BoardMemberRepository;
-import com.theninjadev.taskflowapi.repositories.TaskListRepository;
-import com.theninjadev.taskflowapi.repositories.TaskRepository;
-import com.theninjadev.taskflowapi.repositories.UserRepository;
+import com.theninjadev.taskflowapi.repositories.*;
 import jakarta.transaction.Transactional;
 import lombok.AllArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -41,6 +38,8 @@ public class TaskService {
     private final ActivityLogService activityLogService;
     private final NotificationService notificationService;
     private final SimpMessagingTemplate messagingTemplate;
+    private final CommentRepository commentRepository;
+    private final AttachmentRepository attachmentRepository;
 
     @Transactional
     public TaskDto createTask(UUID taskListId, CreateTaskRequest request, UUID currentUserId) {
@@ -70,7 +69,7 @@ public class TaskService {
         if (request.getPriority() != null) task.setPriority(priority);
 
         taskRepository.saveAndFlush(task);
-        var taskDto = taskMapper.toDto(task);
+        var taskDto = taskMapper.toDto(task).withCounts(commentRepository.countByTaskId(task.getId()), attachmentRepository.countByTaskId(task.getId()));
 
         activityLogService.log(ActionType.TASK_CREATED, board, task, currentUser, Map.of("short_code", task.getShortCode()));
         var event = new BoardEvent<>("TASK_CREATED", taskDto);
@@ -85,14 +84,14 @@ public class TaskService {
         var task = taskRepository.findById(taskId).orElseThrow(TaskNotFoundException::new);
         boardService.requireMembership(task.getBoard().getId(), currentUserId);
 
-        return taskMapper.toDto(task);
+        return taskMapper.toDto(task).withCounts(commentRepository.countByTaskId(task.getId()), attachmentRepository.countByTaskId(task.getId()));
     }
 
     public Page<TaskDto> getTasksForBoard(UUID boardId, Pageable pageable, UUID currentUserId) {
         boardService.getBoardOrThrow(boardId);
         boardService.requireMembership(boardId, currentUserId);
 
-        return taskRepository.findByBoardId(boardId, pageable).map(taskMapper::toDto);
+        return taskRepository.findByBoardId(boardId, pageable).map(task -> taskMapper.toDto(task).withCounts(commentRepository.countByTaskId(task.getId()), attachmentRepository.countByTaskId(task.getId())));
     }
 
     public List<TaskDto> getTasksForList(UUID taskListId, UUID currentUserId) {
@@ -102,7 +101,7 @@ public class TaskService {
         return taskRepository
                 .findByTaskListIdOrderByPositionAsc(taskListId)
                 .stream()
-                .map(taskMapper::toDto)
+                .map(task -> taskMapper.toDto(task).withCounts(commentRepository.countByTaskId(task.getId()), attachmentRepository.countByTaskId(task.getId())))
                 .toList();
     }
 
@@ -110,7 +109,7 @@ public class TaskService {
         return taskRepository
                 .findByAssigneeId(currentUserId)
                 .stream()
-                .map(taskMapper::toDto)
+                .map(task -> taskMapper.toDto(task).withCounts(commentRepository.countByTaskId(task.getId()), attachmentRepository.countByTaskId(task.getId())))
                 .toList();
     }
 
@@ -131,7 +130,7 @@ public class TaskService {
         if (request.getDueDate() != null) task.setDueDate(request.getDueDate());
 
         taskRepository.save(task);
-        var taskDto = taskMapper.toDto(task);
+        var taskDto = taskMapper.toDto(task).withCounts(commentRepository.countByTaskId(task.getId()), attachmentRepository.countByTaskId(task.getId()));
 
         if (request.getTitle() != null || request.getDescription() != null || request.getDueDate() != null)
             activityLogService.log(ActionType.TASK_UPDATED, task.getBoard(), task, currentUser, Map.of("short_code", task.getShortCode()));
@@ -179,14 +178,14 @@ public class TaskService {
 
         if (task.getTaskList().getId().equals(request.getTaskListId())
                 && task.getPosition().equals(request.getPosition())) {
-            return taskMapper.toDto(task);
+            return taskMapper.toDto(task).withCounts(commentRepository.countByTaskId(task.getId()), attachmentRepository.countByTaskId(task.getId()));
         }
 
         task.setTaskList(newList);
         task.setPosition(request.getPosition());
 
         taskRepository.save(task);
-        var taskDto = taskMapper.toDto(task);
+        var taskDto = taskMapper.toDto(task).withCounts(commentRepository.countByTaskId(task.getId()), attachmentRepository.countByTaskId(task.getId()));
 
         activityLogService.log(ActionType.TASK_MOVED, task.getBoard(), task, currentUser, Map.of("short_code", task.getShortCode(), "from_list", oldList.getTitle(), "to_list", newList.getTitle()));
 

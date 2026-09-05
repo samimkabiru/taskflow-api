@@ -10,4 +10,6 @@ public interface AttachmentRepository extends JpaRepository<Attachment, UUID> {
 
     // Newest first — matches the task detail mockup's ordering
     List<Attachment> findByTaskIdOrderByCreatedAtDesc(UUID taskId);
+
+    long countByTaskId(UUID taskId);
 }
