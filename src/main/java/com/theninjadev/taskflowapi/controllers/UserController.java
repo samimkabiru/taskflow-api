@@ -2,7 +2,9 @@ package com.theninjadev.taskflowapi.controllers;
 
 import com.theninjadev.taskflowapi.dtos.auth.UserDto;
 import com.theninjadev.taskflowapi.dtos.user.UpdateProfileRequest;
+import com.theninjadev.taskflowapi.services.RefreshCookieService;
 import com.theninjadev.taskflowapi.services.UserService;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
 import org.springframework.http.HttpHeaders;
@@ -20,6 +22,7 @@ import java.util.UUID;
 public class UserController {
 
     private final UserService userService;
+    private final RefreshCookieService refreshCookieService;
 
     @PatchMapping("/me")
     public ResponseEntity<UserDto> updateProfile(
@@ -42,6 +45,13 @@ public class UserController {
                 .contentType(MediaType.parseMediaType(result.contentType()))
                 .header(HttpHeaders.CONTENT_DISPOSITION, "inline")
                 .body(result.bytes());
+    }
+
+    @DeleteMapping("/users/me")
+    public ResponseEntity<Void> deleteAccount(HttpServletResponse response) {
+        userService.deleteAccount(getCurrentUserId());
+        response.addHeader(HttpHeaders.SET_COOKIE, refreshCookieService.clearRefreshTokenCookie().toString());
+        return ResponseEntity.noContent().build();
     }
 
     private UUID getCurrentUserId() {

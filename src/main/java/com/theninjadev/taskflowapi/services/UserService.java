@@ -5,10 +5,12 @@ import com.theninjadev.taskflowapi.dtos.user.GetAvatarResult;
 import com.theninjadev.taskflowapi.dtos.user.UpdateProfileRequest;
 import com.theninjadev.taskflowapi.exceptions.*;
 import com.theninjadev.taskflowapi.mappers.UserMapper;
+import com.theninjadev.taskflowapi.repositories.RefreshTokenRepository;
 import com.theninjadev.taskflowapi.repositories.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.unit.DataSize;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -19,6 +21,7 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class UserService {
     private final FileStorageService fileStorageService;
+    private final RefreshTokenRepository refreshTokenRepository;
     @Value("${app.avatar.max-size}")
     private DataSize maxImageSize;
 
@@ -69,5 +72,24 @@ public class UserService {
         var bytes = fileStorageService.load(user.getAvatarUrl());
 
         return new GetAvatarResult(bytes, user.getAvatarContentType());
+    }
+
+    @Transactional
+    public void deleteAccount(UUID currentUserId) {
+        var user = userRepository.findById(currentUserId).orElseThrow(UserNotFoundException::new);
+
+        if (user.getAvatarUrl() != null)
+            fileStorageService.delete(user.getAvatarUrl());
+
+        user.setEmail("deleted-" + user.getId() + "@deleted.local");
+        user.setFullName("Deleted User");
+        user.setPasswordHash(null);
+        user.setAvatarUrl(null);
+        user.setAvatarContentType(null);
+
+        userRepository.save(user);
+
+        refreshTokenRepository.revokeAllByUserId(currentUserId);
+
     }
 }
