@@ -43,6 +43,7 @@ public class AuthService {
         var user = new User();
         user.setFullName(request.getFullName());
         user.setEmail(email);
+        user.setAuthProvider(AuthProvider.LOCAL);
         user.setPasswordHash(passwordEncoder.encode(request.getPassword()));
 
         userRepository.save(user);
