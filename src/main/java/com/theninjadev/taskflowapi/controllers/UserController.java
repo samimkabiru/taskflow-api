@@ -5,6 +5,8 @@ import com.theninjadev.taskflowapi.dtos.user.UpdateProfileRequest;
 import com.theninjadev.taskflowapi.services.UserService;
 import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
@@ -31,6 +33,15 @@ public class UserController {
             @RequestParam("file") MultipartFile file
     ) {
         return ResponseEntity.ok(userService.uploadAvatar(getCurrentUserId(), file));
+    }
+
+    @GetMapping("/users/{userId}/avatar")
+    public ResponseEntity<byte[]> getAvatar(@PathVariable UUID userId) {
+        var result = userService.getAvatar(userId);
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType(result.contentType()))
+                .header(HttpHeaders.CONTENT_DISPOSITION, "inline")
+                .body(result.bytes());
     }
 
     private UUID getCurrentUserId() {

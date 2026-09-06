@@ -1,11 +1,9 @@
 package com.theninjadev.taskflowapi.services;
 
 import com.theninjadev.taskflowapi.dtos.auth.UserDto;
+import com.theninjadev.taskflowapi.dtos.user.GetAvatarResult;
 import com.theninjadev.taskflowapi.dtos.user.UpdateProfileRequest;
-import com.theninjadev.taskflowapi.exceptions.EmptyFileException;
-import com.theninjadev.taskflowapi.exceptions.FileTooLargeException;
-import com.theninjadev.taskflowapi.exceptions.InvalidImageTypeException;
-import com.theninjadev.taskflowapi.exceptions.UserNotFoundException;
+import com.theninjadev.taskflowapi.exceptions.*;
 import com.theninjadev.taskflowapi.mappers.UserMapper;
 import com.theninjadev.taskflowapi.repositories.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -55,9 +53,21 @@ public class UserService {
 
         var storageKey = fileStorageService.store(file);
         user.setAvatarUrl(storageKey);
+        user.setAvatarContentType(file.getContentType());
 
         userRepository.save(user);
 
         return userMapper.toDto(user);
+    }
+
+    public GetAvatarResult getAvatar(UUID userId) {
+        var user = userRepository.findById(userId).orElseThrow(UserNotFoundException::new);
+
+        if (user.getAvatarUrl() == null)
+            throw new AttachmentNotFoundException();
+
+        var bytes = fileStorageService.load(user.getAvatarUrl());
+
+        return new GetAvatarResult(bytes, user.getAvatarContentType());
     }
 }
