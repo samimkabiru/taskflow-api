@@ -18,7 +18,7 @@ public class DueSoonNotificationJob {
     private final NotificationService notificationService;
 
 
-    @Scheduled(cron = "0 44 9 * * *")
+    @Scheduled(cron = "0 0 8 * * *")
     public void checkDueSoonTasks() {
         for (int offset : new int[] {0, 1, 2}) {
             var targetDate = LocalDate.now().plusDays(offset);
