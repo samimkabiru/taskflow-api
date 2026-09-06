@@ -1,5 +1,6 @@
 package com.theninjadev.taskflowapi.entities;
 
+import com.theninjadev.taskflowapi.enums.AuthProvider;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -32,6 +33,10 @@ public class User {
 
     @Column(name = "avatar_url")
     private String avatarUrl;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "auth_provider")
+    private AuthProvider authProvider;
 
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)

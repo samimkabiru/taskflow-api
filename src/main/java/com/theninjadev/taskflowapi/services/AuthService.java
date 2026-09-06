@@ -1,32 +1,31 @@
 package com.theninjadev.taskflowapi.services;
 
 import com.theninjadev.taskflowapi.config.JwtConfig;
-import com.theninjadev.taskflowapi.dtos.auth.AuthResult;
-import com.theninjadev.taskflowapi.dtos.auth.ChangePasswordRequest;
-import com.theninjadev.taskflowapi.dtos.auth.LoginRequest;
-import com.theninjadev.taskflowapi.dtos.auth.RegisterRequest;
+import com.theninjadev.taskflowapi.dtos.auth.*;
 import com.theninjadev.taskflowapi.entities.RefreshToken;
 import com.theninjadev.taskflowapi.entities.User;
-import com.theninjadev.taskflowapi.exceptions.InvalidCredentialsException;
-import com.theninjadev.taskflowapi.exceptions.InvalidRefreshTokenException;
-import com.theninjadev.taskflowapi.exceptions.UserExistsException;
-import com.theninjadev.taskflowapi.exceptions.UserNotFoundException;
+import com.theninjadev.taskflowapi.enums.AuthProvider;
+import com.theninjadev.taskflowapi.exceptions.*;
 import com.theninjadev.taskflowapi.mappers.UserMapper;
 import com.theninjadev.taskflowapi.repositories.RefreshTokenRepository;
 import com.theninjadev.taskflowapi.repositories.UserRepository;
-import jakarta.validation.Valid;
-import lombok.AllArgsConstructor;
+import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.client.RestClient;
 
 import java.time.OffsetDateTime;
 import java.util.UUID;
 
 @Service
-@AllArgsConstructor
+@RequiredArgsConstructor
 public class AuthService {
+    @Value( "${app.google.client-id}")
+    private String googleClientId;
+
     private final UserRepository userRepository;
     private final RefreshTokenRepository refreshTokenRepository;
     private final PasswordEncoder passwordEncoder;
@@ -57,8 +56,42 @@ public class AuthService {
         var user = userRepository.findByEmail(email)
                 .orElseThrow(InvalidCredentialsException::new);
 
-        if (!passwordEncoder.matches(request.getPassword(), user.getPasswordHash()))
+        if (user.getPasswordHash() == null || !passwordEncoder.matches(request.getPassword(), user.getPasswordHash()))
             throw new InvalidCredentialsException();
+
+        return issueTokensFor(user);
+    }
+
+    public AuthResult loginWithGoogle(GoogleLoginRequest request) {
+        RestClient restClient = RestClient.create();
+
+        GoogleTokenInfo tokenInfo;
+        try {
+            tokenInfo = restClient.get()
+                    .uri("https://oauth2.googleapis.com/tokeninfo?id_token={idToken}", request.getIdToken())
+                    .retrieve()
+                    .body(GoogleTokenInfo.class);
+        } catch (Exception e) {
+            throw new OAuthVerificationException();
+        }
+
+        if (tokenInfo.aud() == null || !tokenInfo.aud().equals(googleClientId))
+            throw new OAuthVerificationException();
+
+        if (!Boolean.parseBoolean(tokenInfo.email_verified()))
+            throw new OAuthVerificationException();
+
+        var email = tokenInfo.email();
+        var user = userRepository.findByEmail(email).orElse(null);
+
+        if (user == null) {
+            user = new User();
+            user.setFullName(tokenInfo.name());
+            user.setEmail(email);
+            user.setAuthProvider(AuthProvider.GOOGLE);
+            user.setPasswordHash(null);
+            userRepository.save(user);
+        }
 
         return issueTokensFor(user);
     }

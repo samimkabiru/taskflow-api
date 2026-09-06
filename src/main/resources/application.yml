@@ -17,3 +17,5 @@ spring:
       max-request-size: 10MB
 app:
   upload-dir: ./uploads
+  google:
+    client-id: ${GOOGLE_CLIENT_ID}

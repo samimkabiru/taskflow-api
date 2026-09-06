@@ -1,10 +1,7 @@
 package com.theninjadev.taskflowapi.controllers;
 
 import com.theninjadev.taskflowapi.config.JwtConfig;
-import com.theninjadev.taskflowapi.dtos.auth.AuthResponse;
-import com.theninjadev.taskflowapi.dtos.auth.ChangePasswordRequest;
-import com.theninjadev.taskflowapi.dtos.auth.LoginRequest;
-import com.theninjadev.taskflowapi.dtos.auth.RegisterRequest;
+import com.theninjadev.taskflowapi.dtos.auth.*;
 import com.theninjadev.taskflowapi.services.AuthService;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
@@ -57,6 +54,23 @@ public class AuthController {
                         authResult.accessToken(),
                         authResult.user()));
 
+    }
+
+    @PostMapping("/google")
+    public ResponseEntity<AuthResponse> loginWithGoogle(
+            @Valid @RequestBody GoogleLoginRequest request,
+            HttpServletResponse response
+            ) {
+        var authResult = authService.loginWithGoogle(request);
+
+        var cookie = buildRefreshTokenCookie(authResult.refreshToken());
+
+        response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
+
+        return ResponseEntity
+                .ok(new AuthResponse(
+                        authResult.accessToken(),
+                        authResult.user()));
     }
 
     @PostMapping("/logout")

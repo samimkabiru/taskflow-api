@@ -212,4 +212,10 @@ public class GlobalExceptionHandler {
         var problem = ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.getMessage());
         return ResponseEntity.status(HttpStatus.CONFLICT).body(problem);
     }
+
+    @ExceptionHandler(OAuthVerificationException.class)
+    public ResponseEntity<ProblemDetail> handleOAuthVerificationIssues(OAuthVerificationException ex) {
+        var problem = ProblemDetail.forStatusAndDetail(HttpStatus.UNAUTHORIZED, ex.getMessage());
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(problem);
+    }
 }
