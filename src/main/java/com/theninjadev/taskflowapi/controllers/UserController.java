@@ -7,10 +7,8 @@ import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.web.bind.annotation.PatchMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.UUID;
 
@@ -26,6 +24,13 @@ public class UserController {
             @Valid @RequestBody UpdateProfileRequest request
     ) {
         return ResponseEntity.ok(userService.updateProfile(getCurrentUserId(), request));
+    }
+
+    @PostMapping("/me/avatar")
+    public ResponseEntity<UserDto> uploadAvatar(
+            @RequestParam("file") MultipartFile file
+    ) {
+        return ResponseEntity.ok(userService.uploadAvatar(getCurrentUserId(), file));
     }
 
     private UUID getCurrentUserId() {

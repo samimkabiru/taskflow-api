@@ -19,3 +19,5 @@ app:
   upload-dir: ./uploads
   google:
     client-id: ${GOOGLE_CLIENT_ID}
+  avatar:
+    max-size: 5MB
