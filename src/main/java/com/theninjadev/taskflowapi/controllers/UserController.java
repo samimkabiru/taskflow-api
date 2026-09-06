@@ -38,7 +38,7 @@ public class UserController {
         return ResponseEntity.ok(userService.uploadAvatar(getCurrentUserId(), file));
     }
 
-    @GetMapping("/users/{userId}/avatar")
+    @GetMapping("/{userId}/avatar")
     public ResponseEntity<byte[]> getAvatar(@PathVariable UUID userId) {
         var result = userService.getAvatar(userId);
         return ResponseEntity.ok()
@@ -47,7 +47,7 @@ public class UserController {
                 .body(result.bytes());
     }
 
-    @DeleteMapping("/users/me")
+    @DeleteMapping("/me")
     public ResponseEntity<Void> deleteAccount(HttpServletResponse response) {
         userService.deleteAccount(getCurrentUserId());
         response.addHeader(HttpHeaders.SET_COOKIE, refreshCookieService.clearRefreshTokenCookie().toString());

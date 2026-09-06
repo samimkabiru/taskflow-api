@@ -103,6 +103,10 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-websocket</artifactId>
         </dependency>
+        <dependency>
+            <groupId>software.amazon.awssdk</groupId>
+            <artifactId>s3</artifactId>
+        </dependency>
 
     </dependencies>
 
@@ -112,6 +116,14 @@
                 <groupId>me.paulschwarz</groupId>
                 <artifactId>spring-dotenv-bom</artifactId>
                 <version>5.1.0</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+
+            <dependency>
+                <groupId>software.amazon.awssdk</groupId>
+                <artifactId>bom</artifactId>
+                <version>2.46.21</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>

@@ -54,7 +54,7 @@ public class UserService {
         if (user.getAvatarUrl() != null)
             fileStorageService.delete(user.getAvatarUrl());
 
-        var storageKey = fileStorageService.store(file);
+        var storageKey = fileStorageService.store(file, "avatars/" + currentUserId);
         user.setAvatarUrl(storageKey);
         user.setAvatarContentType(file.getContentType());
 

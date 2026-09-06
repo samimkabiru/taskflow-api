@@ -51,7 +51,7 @@ public class AttachmentService {
         if (file.getSize() > maxFileSize.toBytes())
             throw new FileTooLargeException();
 
-        var storageKey = fileStorageService.store(file);
+        var storageKey = fileStorageService.store(file, "attachments/" + taskId);
 
         var attachment = new Attachment();
         attachment.setFileName(file.getOriginalFilename());
