@@ -24,7 +24,7 @@ app:
     secret-key: ${B2_APPLICATION_KEY}
     endpoint: ${B2_ENDPOINT}
     bucket: ${B2_BUCKET_NAME}
-    region: us-east-005
+    region: ${B2_REGION}
   google:
     client-id: ${GOOGLE_CLIENT_ID}
   avatar:
